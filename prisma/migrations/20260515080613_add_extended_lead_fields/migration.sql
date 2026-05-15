@@ -1,0 +1,17 @@
+-- AlterTable
+ALTER TABLE "Lead" ADD COLUMN "description" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "facebook" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "imageUrl" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "instagram" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "lat" REAL;
+ALTER TABLE "Lead" ADD COLUMN "linkedin" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "lng" REAL;
+ALTER TABLE "Lead" ADD COLUMN "openingHours" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "permanentlyClosed" BOOLEAN DEFAULT false;
+ALTER TABLE "Lead" ADD COLUMN "pinterest" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "price" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "temporarilyClosed" BOOLEAN DEFAULT false;
+ALTER TABLE "Lead" ADD COLUMN "tiktok" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "twitter" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "webResults" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "youtube" TEXT;

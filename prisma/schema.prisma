@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Lead {
+  id                String   @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  company           String?
+  website           String?
+  address           String?
+  city              String?
+  country           String?
+  category          String?
+  rating            Float?
+  reviewCount       Int?
+  source            String   @default("manual")
+  sourceQuery       String?
+  placeId           String?  @unique
+  status            String   @default("new")
+  notes             String?
+  tags              String?
+  // Location coordinates
+  lat               Float?
+  lng               Float?
+  // Extended place data
+  imageUrl          String?
+  description       String?
+  price             String?
+  permanentlyClosed Boolean? @default(false)
+  temporarilyClosed Boolean? @default(false)
+  // Social media (from Apify company contacts enrichment)
+  instagram         String?
+  facebook          String?
+  linkedin          String?
+  youtube           String?
+  tiktok            String?
+  twitter           String?
+  pinterest         String?
+  // JSON fields
+  openingHours      String?
+  webResults        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  activities Activity[]
+  contacts   Contact[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  role      String?
+  createdAt DateTime @default(now())
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String
+  note      String
+  createdAt DateTime @default(now())
+}
