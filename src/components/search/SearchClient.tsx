@@ -1,11 +1,25 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import {
-  Search, MapPin, Star, Phone, Globe, Plus, Check,
-  Loader2, AlertCircle, Building2, Clock, ExternalLink,
+  Search,
+  MapPin,
+  Star,
+  Phone,
+  Globe,
+  Plus,
+  Check,
+  Loader2,
+  AlertCircle,
+  Building2,
+  Clock,
+  ExternalLink,
+  Map,
+  Trash2,
 } from 'lucide-react'
+import { circleToGeoJsonPolygon, verticesToGeoJsonPolygon } from '@/lib/geo'
 
 interface OpeningHour { day: string; hours: string }
 
@@ -50,6 +64,17 @@ const SOCIAL_PLATFORMS = [
   { key: 'youtubes', label: 'YT', color: 'bg-red-100 text-red-700' },
 ] as const
 
+// Leaflet only runs in the browser — load the drawing map dynamically.
+const SearchAreaMap = dynamic(
+  () => import('./SearchAreaMap').then((m) => m.SearchAreaMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] bg-gray-50 rounded-xl border border-gray-200 animate-pulse" />
+    ),
+  },
+)
+
 function getTodayHours(openingHours?: OpeningHour[]): string | null {
   if (!openingHours?.length) return null
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -69,23 +94,65 @@ export function SearchClient() {
   const [importingId, setImportingId] = useState<string | null>(null)
   const [searchMeta, setSearchMeta] = useState<{ query: string; location: string } | null>(null)
 
+  // Map mode state
+  const [searchMode, setSearchMode] = useState<'text' | 'map'>('text')
+  const [shape, setShape] = useState<'circle' | 'polygon'>('circle')
+  const [center, setCenter] = useState<[number, number] | null>(null)
+  const [radiusKm, setRadiusKm] = useState(2)
+  const [vertices, setVertices] = useState<[number, number][]>([])
+
+  const shapeReady =
+    shape === 'circle' ? center !== null : vertices.length >= 3
+
+  function clearShape() {
+    setCenter(null)
+    setVertices([])
+  }
+
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    if (!query.trim() || !location.trim()) return
+    if (!query.trim()) return
+    if (searchMode === 'text' && !location.trim()) return
+    if (searchMode === 'map' && !shapeReady) {
+      setError(
+        shape === 'circle'
+          ? 'Haz clic en el mapa para fijar el centro del círculo'
+          : 'Añade al menos 3 vértices para formar el polígono',
+      )
+      return
+    }
+
     setLoading(true)
     setError(null)
     setResults([])
+
+    const body: Record<string, unknown> = { query, maxResults }
+    let metaLocation = ''
+
+    if (searchMode === 'text') {
+      body.location = location
+      metaLocation = location
+    } else {
+      body.area =
+        shape === 'circle'
+          ? circleToGeoJsonPolygon(center![0], center![1], radiusKm)
+          : verticesToGeoJsonPolygon(vertices)
+      metaLocation =
+        shape === 'circle'
+          ? `un círculo de ${radiusKm} km`
+          : `un polígono de ${vertices.length} vértices`
+    }
 
     try {
       const res = await fetch('/api/apify/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, location, maxResults }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al buscar')
       setResults(data.items ?? [])
-      setSearchMeta({ query: data.query, location: data.location })
+      setSearchMeta({ query: data.query ?? query, location: metaLocation })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -131,20 +198,37 @@ export function SearchClient() {
 
       {/* Search form */}
       <form onSubmit={handleSearch} className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Tipo de negocio</label>
-            <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ej: restaurante, gimnasio, dentista..."
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+        {/* Mode toggle */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <ModeTab
+            active={searchMode === 'text'}
+            onClick={() => setSearchMode('text')}
+            icon={Search}
+            label="Por texto"
+          />
+          <ModeTab
+            active={searchMode === 'map'}
+            onClick={() => setSearchMode('map')}
+            icon={Map}
+            label="En el mapa"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-gray-600">Tipo de negocio</label>
+          <div className="relative">
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ej: restaurante, gimnasio, dentista..."
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
           </div>
+        </div>
+
+        {searchMode === 'text' ? (
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-gray-600">Ubicación</label>
             <div className="relative">
@@ -158,7 +242,90 @@ export function SearchClient() {
               />
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-600">Forma:</span>
+                <div className="flex gap-1 bg-gray-100 p-0.5 rounded-md">
+                  <ShapeTab
+                    active={shape === 'circle'}
+                    onClick={() => { setShape('circle'); clearShape() }}
+                    label="Círculo"
+                  />
+                  <ShapeTab
+                    active={shape === 'polygon'}
+                    onClick={() => { setShape('polygon'); clearShape() }}
+                    label="Polígono"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {shape === 'polygon' && vertices.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setVertices((v) => v.slice(0, -1))}
+                    className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1"
+                  >
+                    Quitar último vértice
+                  </button>
+                )}
+                {(center || vertices.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={clearShape}
+                    className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-md px-2 py-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> Limpiar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="h-[400px] rounded-xl overflow-hidden border border-gray-200">
+              <SearchAreaMap
+                mode={shape}
+                center={center}
+                radiusKm={radiusKm}
+                vertices={vertices}
+                onSetCenter={setCenter}
+                onAddVertex={(v) => setVertices((prev) => [...prev, v])}
+              />
+            </div>
+
+            {shape === 'circle' ? (
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">
+                  Radio
+                </label>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={20}
+                  step={0.5}
+                  value={radiusKm}
+                  onChange={(e) => setRadiusKm(Number(e.target.value))}
+                  className="flex-1 accent-blue-600"
+                />
+                <span className="text-xs font-medium text-gray-700 w-16 text-right">
+                  {radiusKm} km
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">
+                Haz clic en el mapa para añadir vértices. Necesitas al menos 3 para formar
+                un polígono. Vértices actuales:{' '}
+                <span className="font-medium text-gray-700">{vertices.length}</span>
+              </p>
+            )}
+
+            {shape === 'circle' && !center && (
+              <p className="text-xs text-gray-500">
+                Haz clic en el mapa para fijar el centro del círculo.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-gray-600">Categorías rápidas</label>
@@ -213,7 +380,7 @@ export function SearchClient() {
         <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <div>
-            <p className="font-medium text-sm">Error al buscar</p>
+            <p className="font-medium text-sm">No se pudo buscar</p>
             <p className="text-xs mt-0.5">{error}</p>
           </div>
         </div>
@@ -234,7 +401,7 @@ export function SearchClient() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
               <span className="font-semibold text-gray-900">{results.length}</span> resultados para{' '}
-              <em>"{searchMeta?.query}"</em> en {searchMeta?.location}
+              <em>{searchMeta?.query}</em> en {searchMeta?.location}
             </p>
             <button
               onClick={handleImportAll}
@@ -263,7 +430,7 @@ export function SearchClient() {
         <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
           <Search className="w-8 h-8 mx-auto mb-3 text-gray-300" />
           <p className="text-gray-500 text-sm">No se encontraron resultados</p>
-          <p className="text-gray-400 text-xs mt-1">Prueba con otros términos o ubicación</p>
+          <p className="text-gray-400 text-xs mt-1">Prueba con otros términos o área</p>
         </div>
       )}
 
@@ -275,6 +442,53 @@ export function SearchClient() {
         </div>
       )}
     </div>
+  )
+}
+
+function ModeTab({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: typeof Search
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+        active ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      {label}
+    </button>
+  )
+}
+
+function ShapeTab({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+        active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+      }`}
+    >
+      {label}
+    </button>
   )
 }
 

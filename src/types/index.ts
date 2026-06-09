@@ -41,10 +41,21 @@ export interface Lead {
   // JSON strings
   openingHours?: string | null
   webResults?: string | null
+  // Folder organization
+  folderId?: string | null
   createdAt: string
   updatedAt: string
   activities?: Activity[]
   contacts?: Contact[]
+}
+
+export interface Folder {
+  id: string
+  name: string
+  color?: string | null
+  parentId?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Contact {
@@ -94,3 +105,17 @@ export const PIPELINE_COLUMNS: LeadStatus[] = [
   'won',
   'lost',
 ]
+
+// Color palette for folders (hex values used for the folder icon tint)
+export const FOLDER_COLORS = [
+  '#64748b', // slate
+  '#3b82f6', // blue
+  '#10b981', // emerald
+  '#f59e0b', // amber
+  '#ef4444', // red
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#14b8a6', // teal
+] as const
+
+export const DEFAULT_FOLDER_COLOR = FOLDER_COLORS[0]

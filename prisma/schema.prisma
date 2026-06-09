@@ -51,11 +51,30 @@ model Lead {
   // JSON fields
   openingHours      String?
   webResults        String?
+  // Folder organization
+  folderId          String?
+  folder            Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   activities Activity[]
   contacts   Contact[]
+
+  @@index([folderId])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  color     String?
+  parentId  String?
+  parent    Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Folder[] @relation("FolderTree")
+  leads     Lead[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
 }
 
 model Contact {
