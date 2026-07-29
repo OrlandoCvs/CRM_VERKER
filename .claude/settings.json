@@ -28,7 +28,8 @@
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{try{const r=JSON.parse\\(d\\);console.log\\('  summary:',JSON.stringify\\(r.summary\\)\\);console.log\\('  email:',r.results?.[0]?.email,'->',r.results?.[0]?.check\\)}catch{console.log\\(d.slice\\(0,150\\)\\)}}\\)\")",
       "Bash(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/email/validate -H \"Content-Type: application/json\" -d '{\"leadIds\":[\"zz-mx-test\"]}')",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\('  nadie@dominio-muerto-xyz123abc.com ->',r.results?.[0]?.check,'\\(esperado: no_mx\\)'\\)}\\)\")",
-      "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const d=new DatabaseSync\\('./dev.db'\\);d.prepare\\(\\\\\"DELETE FROM Lead WHERE id='zz-mx-test'\\\\\"\\).run\\(\\);console.log\\('  limpiado'\\)\")"
+      "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const d=new DatabaseSync\\('./dev.db'\\);d.prepare\\(\\\\\"DELETE FROM Lead WHERE id='zz-mx-test'\\\\\"\\).run\\(\\);console.log\\('  limpiado'\\)\")",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
