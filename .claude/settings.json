@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash([ -f \"$LOG\" ])",
+      "Bash(jobs)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/api/email/templates)",
+      "Bash(node --experimental-strip-types --input-type=module -e ' *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:3000/api/email/templates)",
+      "Bash(rm -f /tmp/adj-test.txt)",
+      "Bash(curl -s -o /dev/null -w \"  /dashboard sin sesión -> HTTP %{http_code} \\(redirect a: %{redirect_url}\\)\\\\n\" http://localhost:3000/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"  /login -> HTTP %{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(curl -s -o /dev/null -w \"  /api/auth/status -> HTTP %{http_code}\\\\n\" http://localhost:3000/api/auth/status)",
+      "Bash(curl -s -o /dev/null -w \"  /dashboard sin cookie -> HTTP %{http_code} | redirect: %{redirect_url}\\\\n\" http://localhost:3000/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"  /api/reminders sin cookie -> HTTP %{http_code}\\\\n\" http://localhost:3000/api/reminders)",
+      "Bash(curl -s -o /dev/null -w \"  contraseña incorrecta -> HTTP %{http_code}\\\\n\" -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"password\":\"malísima\"}')",
+      "Bash(curl -s -c /tmp/cookies.txt -o /dev/null -w \"  contraseña correcta -> HTTP %{http_code}\\\\n\" -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"password\":\"verker2026\"}')",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(curl -s -c /tmp/ck.txt -o /dev/null -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"password\":\"verker2026\"}')",
+      "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const d=new DatabaseSync\\('./dev.db'\\);console.log\\(d.prepare\\('SELECT id FROM Lead WHERE email IS NOT NULL LIMIT 1'\\).get\\(\\).id\\)\")",
+      "Bash(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/email/validate -H 'Content-Type: application/json' -d '{\"leadIds\":[\"__TRACKED_VAR__\"]}')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\('  summary:',JSON.stringify\\(r.summary\\)\\);console.log\\('  resultado del lead:',r.results?.[0]?.check\\)}\\)\")",
+      "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const d=new DatabaseSync\\('./dev.db'\\);const l=d.prepare\\('SELECT id FROM Lead WHERE email IS NOT NULL LIMIT 1'\\).get\\(\\);console.log\\(l?l.id:''\\)\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{try{console.log\\(JSON.stringify\\(JSON.parse\\(d\\).summary\\)\\)}catch{console.log\\('respuesta:',d.slice\\(0,200\\)\\)}}\\)\")",
+      "Bash(curl -s -o /dev/null -w \" dns.google -> HTTP %{http_code}\\\\n\" \"https://dns.google/resolve?name=gmail.com&type=MX\")",
+      "Bash(curl -s \"https://dns.google/resolve?name=gmail.com&type=MX\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(d\\);console.log\\(' Status:',j.Status,'| registros MX:',\\(j.Answer||[]\\).filter\\(a=>a.type===15\\).length\\)}catch{console.log\\(' no se pudo parsear'\\)}}\\)\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{try{const r=JSON.parse\\(d\\);console.log\\('  summary:',JSON.stringify\\(r.summary\\)\\);console.log\\('  email:',r.results?.[0]?.email,'->',r.results?.[0]?.check\\)}catch{console.log\\(d.slice\\(0,150\\)\\)}}\\)\")",
+      "Bash(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/email/validate -H \"Content-Type: application/json\" -d '{\"leadIds\":[\"zz-mx-test\"]}')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\('  nadie@dominio-muerto-xyz123abc.com ->',r.results?.[0]?.check,'\\(esperado: no_mx\\)'\\)}\\)\")",
+      "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const d=new DatabaseSync\\('./dev.db'\\);d.prepare\\(\\\\\"DELETE FROM Lead WHERE id='zz-mx-test'\\\\\"\\).run\\(\\);console.log\\('  limpiado'\\)\")"
+    ]
+  }
+}

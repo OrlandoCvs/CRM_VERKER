@@ -1,43 +1,54 @@
 import { prisma } from '@/lib/db'
 import { DashboardClient } from '@/components/dashboard/DashboardClient'
-import { LeadStatus, LeadSource } from '@/types'
+import { Lead, Folder } from '@/types'
+
+/**
+ * El dashboard filtra por carpeta en el cliente, así que envía la lista de leads
+ * (con los campos que alimentan métricas y gráficos) en vez de agregados ya
+ * calculados. Para el volumen de un CRM de este tipo es un coste despreciable y
+ * permite recalcular todo al instante sin recargar la página.
+ */
+type DashLead = Pick<
+  Lead,
+  'id' | 'name' | 'company' | 'city' | 'rating' | 'status' | 'source' | 'folderId' | 'createdAt' | 'updatedAt'
+>
 
 export default async function DashboardPage() {
-  const totalLeads = await prisma.lead.count()
+  const [rawLeads, rawFolders] = await Promise.all([
+    prisma.lead.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, name: true, company: true, city: true, rating: true,
+        status: true, source: true, folderId: true, createdAt: true, updatedAt: true,
+      },
+    }),
+    prisma.folder.findMany({ orderBy: { name: 'asc' } }),
+  ])
 
-  const rawByStatus = await prisma.lead.groupBy({ by: ['status'], _count: { id: true } })
-  const byStatus = rawByStatus as unknown as { status: string; _count: { id: number } }[]
+  const raw = rawLeads as unknown as Array<{
+    id: string; name: string; company: string | null; city: string | null
+    rating: number | null; status: string; source: string
+    folderId: string | null; createdAt: Date; updatedAt: Date
+  }>
 
-  const rawBySource = await prisma.lead.groupBy({ by: ['source'], _count: { id: true } })
-  const bySource = rawBySource as unknown as { source: string; _count: { id: number } }[]
+  const leads: DashLead[] = raw.map((l) => ({
+    ...l,
+    source: l.source as Lead['source'],
+    status: l.status as Lead['status'],
+    createdAt: l.createdAt.toISOString(),
+    updatedAt: l.updatedAt.toISOString(),
+  }))
 
-  const recentLeads = await prisma.lead.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 8,
-    select: {
-      id: true, name: true, company: true, status: true,
-      source: true, city: true, rating: true, createdAt: true,
-    },
-  }) as unknown as {
-    id: string; name: string; company: string | null; status: string
-    source: string; city: string | null; rating: number | null; createdAt: Date
-  }[]
+  const folders: Folder[] = (
+    rawFolders as unknown as Array<{
+      id: string; name: string; color: string | null
+      parentId: string | null; createdAt: Date; updatedAt: Date
+    }>
+  ).map((f) => ({
+    ...f,
+    createdAt: f.createdAt.toISOString(),
+    updatedAt: f.updatedAt.toISOString(),
+  }))
 
-  const wonLeads = byStatus.find((s) => s.status === 'won')?._count.id ?? 0
-  const newLeads = byStatus.find((s) => s.status === 'new')?._count.id ?? 0
-  const googlePlacesLeads = bySource.find((s) => s.source === 'google_places')?._count.id ?? 0
-
-  return (
-    <DashboardClient
-      stats={{ totalLeads, wonLeads, newLeads, googlePlacesLeads }}
-      byStatus={byStatus.map((s) => ({ status: s.status, count: s._count.id }))}
-      bySource={bySource.map((s) => ({ source: s.source, count: s._count.id }))}
-      recentLeads={recentLeads.map((l) => ({
-        ...l,
-        source: l.source as LeadSource,
-        status: l.status as LeadStatus,
-        createdAt: l.createdAt.toISOString(),
-      }))}
-    />
-  )
+  return <DashboardClient leads={leads} folders={folders} />
 }

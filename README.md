@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CRM Verker
 
-## Getting Started
+CRM de generación de leads con búsqueda de negocios en Google Places (vía Apify),
+organización en carpetas, pipeline, mapa de leads y **envío de correo automatizado**
+(individual y campañas masivas con plantillas).
 
-First, run the development server:
+Stack: Next.js 16 (App Router) · React 19 · Prisma 7 + SQLite · Tailwind 4 · Leaflet.
+
+## Puesta en marcha
 
 ```bash
+npm install
+npx prisma generate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000/dashboard](http://localhost:3000/dashboard).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Si `better-sqlite3` da error de versión de Node, ejecuta `npm rebuild better-sqlite3`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variables de entorno
 
-## Learn More
+Copia y completa `.env.local` (ver plantilla incluida):
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Para qué sirve |
+| --- | --- |
+| `DATABASE_URL` | Base SQLite. Por defecto `file:./dev.db`. |
+| `APIFY_TOKEN` | Búsqueda de negocios en Google Places. Opcional. |
+| `EMAIL_FROM` | Remitente de los correos. **Obligatorio para enviar.** |
+| `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` | Envío vía SMTP (Gmail, Outlook, dominio propio). |
+| `RESEND_API_KEY` | Envío vía Resend (prioritario si está definido). |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Correo automatizado
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+El CRM detecta automáticamente el proveedor:
 
-## Deploy on Vercel
+- **SMTP** (recomendado para empezar): funciona con tu Gmail/Outlook usando una
+  *contraseña de aplicación*. Sin verificar dominio, gratis, ~500 correos/día en Gmail.
+- **Resend**: mejor entregabilidad para campañas grandes; requiere verificar un dominio.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Funcionalidad:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Correo individual**: botón *Enviar correo* en la ficha de cada lead.
+- **Campañas masivas**: selecciona varios leads en *Leads* → *Enviar campaña*.
+- **Plantillas** (`/templates`) con variables `{{name}}`, `{{company}}`, `{{city}}`,
+  `{{category}}`, etc., que se reemplazan con los datos de cada lead.
+- Cada envío queda registrado como actividad del lead y, opcionalmente, lo marca como *Contactado*.
+
+## Migraciones
+
+```bash
+npx prisma migrate dev --name <nombre>   # crear/aplicar
+npx prisma migrate status                # ver estado
+```

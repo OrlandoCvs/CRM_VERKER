@@ -54,13 +54,40 @@ model Lead {
   // Folder organization
   folderId          String?
   folder            Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  // Estado de entregabilidad del email (lo actualiza el webhook de Resend).
+  //   unknown     → sin envíos todavía
+  //   valid       → al menos un correo entregado
+  //   bounced     → rebote duro: la dirección no existe, no volver a enviar
+  //   complained  → marcó el correo como spam, no volver a contactar nunca
+  emailStatus       String   @default("unknown")
+  emailStatusAt     DateTime?
+  emailStatusReason String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  activities Activity[]
-  contacts   Contact[]
+  activities   Activity[]
+  contacts     Contact[]
+  emailDeliveries EmailDelivery[]
+  reminders    Reminder[]
 
   @@index([folderId])
+  @@index([emailStatus])
+}
+
+/// Correos enviados por el CRM. Guarda el id que devuelve el proveedor para
+/// poder casar los eventos del webhook (rebotes, quejas) con su lead.
+model EmailDelivery {
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  providerId String   @unique
+  to         String
+  subject    String
+  status     String   @default("sent")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([leadId])
 }
 
 model Folder {
@@ -95,4 +122,48 @@ model Activity {
   type      String
   note      String
   createdAt DateTime @default(now())
+}
+
+/// Tarea de seguimiento pendiente sobre un lead ("volver a llamar el jueves").
+/// A diferencia de Activity (registro de lo ya ocurrido), un Reminder mira al
+/// futuro: tiene fecha de vencimiento y un estado de completado.
+model Reminder {
+  id          String    @id @default(cuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title       String
+  dueAt       DateTime
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Consultas típicas: pendientes de un lead, y agenda global por vencimiento.
+  @@index([leadId])
+  @@index([done, dueAt])
+}
+
+model EmailTemplate {
+  id          String            @id @default(cuid())
+  name        String
+  subject     String
+  body        String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  attachments EmailAttachment[]
+}
+
+/// Archivo adjunto fijo de una plantilla: se envía siempre que se usa esa
+/// plantilla. El binario vive en disco (uploads/); aquí guardamos su metadato.
+model EmailAttachment {
+  id         String        @id @default(cuid())
+  templateId String
+  template   EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  filename   String
+  mimeType   String
+  size       Int
+  storedName String        @unique
+  createdAt  DateTime      @default(now())
+
+  @@index([templateId])
 }

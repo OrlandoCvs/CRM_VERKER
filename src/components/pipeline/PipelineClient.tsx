@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import {
   DndContext,
@@ -19,41 +19,120 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Star, Phone, MapPin, GripVertical } from 'lucide-react'
+import { Star, Phone, MapPin, GripVertical, Search, X } from 'lucide-react'
 import { SourceBadge } from '@/components/ui/Badge'
-import { Lead, LeadStatus, LeadSource, STATUS_LABELS, PIPELINE_COLUMNS } from '@/types'
+import { FolderPicker, FOLDER_ALL, FOLDER_NONE } from '@/components/leads/FolderPicker'
+import { Lead, Folder, LeadStatus, LeadSource, STATUS_LABELS, PIPELINE_COLUMNS } from '@/types'
+import { buildFolderTree, FolderNode, getDescendantIds } from '@/lib/folders'
 
-const COLUMN_COLORS: Record<LeadStatus, string> = {
-  new: 'border-blue-300 bg-blue-50',
-  contacted: 'border-yellow-300 bg-yellow-50',
-  negotiating: 'border-purple-300 bg-purple-50',
-  won: 'border-green-300 bg-green-50',
-  lost: 'border-red-300 bg-red-50',
+/**
+ * Cada columna se identifica por un color de acento. Se aplica como una franja
+ * superior y al punto del encabezado, en vez de teñir toda la columna: mantiene
+ * el tablero legible cuando hay muchas tarjetas.
+ */
+const COLUMN_ACCENT: Record<LeadStatus, { bar: string; dot: string; count: string; ring: string }> = {
+  new: {
+    bar: 'bg-blue-500',
+    dot: 'bg-blue-500',
+    count: 'bg-blue-50 text-blue-700',
+    ring: 'ring-blue-400/60 bg-blue-50/40',
+  },
+  contacted: {
+    bar: 'bg-amber-500',
+    dot: 'bg-amber-500',
+    count: 'bg-amber-50 text-amber-700',
+    ring: 'ring-amber-400/60 bg-amber-50/40',
+  },
+  negotiating: {
+    bar: 'bg-violet-500',
+    dot: 'bg-violet-500',
+    count: 'bg-violet-50 text-violet-700',
+    ring: 'ring-violet-400/60 bg-violet-50/40',
+  },
+  won: {
+    bar: 'bg-emerald-500',
+    dot: 'bg-emerald-500',
+    count: 'bg-emerald-50 text-emerald-700',
+    ring: 'ring-emerald-400/60 bg-emerald-50/40',
+  },
+  lost: {
+    bar: 'bg-rose-400',
+    dot: 'bg-rose-400',
+    count: 'bg-rose-50 text-rose-700',
+    ring: 'ring-rose-400/60 bg-rose-50/40',
+  },
 }
 
-const COLUMN_HEADER: Record<LeadStatus, string> = {
-  new: 'bg-blue-100 text-blue-800',
-  contacted: 'bg-yellow-100 text-yellow-800',
-  negotiating: 'bg-purple-100 text-purple-800',
-  won: 'bg-green-100 text-green-800',
-  lost: 'bg-red-100 text-red-800',
-}
-
-type PipelineLead = Pick<Lead, 'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'createdAt'>
+type PipelineLead = Pick<
+  Lead,
+  'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'folderId' | 'createdAt'
+>
 
 interface Props {
   initialLeads: PipelineLead[]
+  initialFolders: Folder[]
 }
 
-export function PipelineClient({ initialLeads }: Props) {
+export function PipelineClient({ initialLeads, initialFolders }: Props) {
   const [leads, setLeads] = useState<PipelineLead[]>(initialLeads)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [folder, setFolder] = useState<string>(FOLDER_ALL)
+  const [includeSub, setIncludeSub] = useState(true)
+  const [q, setQ] = useState('')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
 
   const activeLead = activeId ? leads.find((l) => l.id === activeId) : null
+
+  // Conteo por carpeta acumulando las subcarpetas, igual que en la vista de Leads.
+  const counts = useMemo(() => {
+    const direct = new Map<string, number>()
+    for (const l of leads) {
+      if (l.folderId) direct.set(l.folderId, (direct.get(l.folderId) ?? 0) + 1)
+    }
+    const total = new Map<string, number>()
+    const walk = (node: FolderNode): number => {
+      let sum = direct.get(node.id) ?? 0
+      for (const child of node.children) sum += walk(child)
+      total.set(node.id, sum)
+      return sum
+    }
+    buildFolderTree(initialFolders).forEach(walk)
+    return total
+  }, [leads, initialFolders])
+
+  const noneCount = useMemo(() => leads.filter((l) => !l.folderId).length, [leads])
+
+  const visibleLeads = useMemo(() => {
+    let scoped = leads
+    if (folder === FOLDER_NONE) {
+      scoped = leads.filter((l) => !l.folderId)
+    } else if (folder !== FOLDER_ALL) {
+      const scope = new Set<string>([folder])
+      if (includeSub) {
+        for (const id of getDescendantIds(folder, initialFolders)) scope.add(id)
+      }
+      scoped = leads.filter((l) => l.folderId && scope.has(l.folderId))
+    }
+
+    const needle = q.trim().toLowerCase()
+    if (!needle) return scoped
+    return scoped.filter((l) =>
+      [l.name, l.company, l.city, l.phone, l.category]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(needle)),
+    )
+  }, [leads, folder, includeSub, q, initialFolders])
+
+  // Una carpeta con subcarpetas es la única situación donde el conmutador aporta.
+  const hasSubfolders =
+    folder !== FOLDER_ALL &&
+    folder !== FOLDER_NONE &&
+    getDescendantIds(folder, initialFolders).length > 0
+
+  const isFiltered = folder !== FOLDER_ALL || q.trim() !== ''
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string)
@@ -78,25 +157,104 @@ export function PipelineClient({ initialLeads }: Props) {
       const lead = leads.find((l) => l.id === leadId)
       if (!lead || lead.status === newStatus) return
 
+      const previousStatus = lead.status
+      // Actualización optimista: la tarjeta se mueve al soltarla y se revierte
+      // si el servidor rechaza el cambio, para no mostrar un estado que no se guardó.
       setLeads((prev) =>
         prev.map((l) => (l.id === leadId ? { ...l, status: newStatus as LeadStatus } : l))
       )
 
-      await fetch(`/api/leads/${leadId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      })
+      try {
+        const res = await fetch(`/api/leads/${leadId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        })
+        if (!res.ok) throw new Error('El servidor rechazó el cambio')
+      } catch {
+        setLeads((prev) =>
+          prev.map((l) => (l.id === leadId ? { ...l, status: previousStatus } : l))
+        )
+      }
     },
     [leads]
   )
 
   return (
-    <div className="p-6 flex flex-col h-full">
-      <div className="mb-5">
-        <h2 className="text-2xl font-bold text-gray-900">Pipeline</h2>
-        <p className="text-gray-500 text-sm mt-0.5">Arrastra los leads entre columnas para cambiar su estado</p>
-      </div>
+    // h-screen + min-h-0 acotan el alto real disponible: sin esto las columnas
+    // crecen con su contenido y el tablero desborda la página verticalmente.
+    <div className="flex h-screen flex-col overflow-hidden">
+      <header className="shrink-0 space-y-3 border-b border-gray-200 bg-white px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-gray-900">Pipeline</h2>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Arrastra los leads entre columnas para cambiar su estado
+            </p>
+          </div>
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium tabular-nums text-gray-600">
+            {isFiltered
+              ? `${visibleLeads.length} de ${leads.length}`
+              : `${leads.length} ${leads.length === 1 ? 'lead' : 'leads'}`}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <FolderPicker
+            folders={initialFolders}
+            value={folder}
+            onChange={setFolder}
+            counts={counts}
+            allCount={leads.length}
+            noneCount={noneCount}
+          />
+
+          {hasSubfolders && (
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:border-gray-400">
+              <input
+                type="checkbox"
+                checked={includeSub}
+                onChange={(e) => setIncludeSub(e.target.checked)}
+                className="cursor-pointer rounded border-gray-300"
+              />
+              Incluir subcarpetas
+            </label>
+          )}
+
+          <div className="relative min-w-[12rem] flex-1 sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar en el tablero…"
+              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-8 text-sm outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => setQ('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={() => {
+                setFolder(FOLDER_ALL)
+                setQ('')
+              }}
+              className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      </header>
 
       <DndContext
         sensors={sensors}
@@ -104,20 +262,20 @@ export function PipelineClient({ initialLeads }: Props) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1">
-          {PIPELINE_COLUMNS.map((status) => {
-            const colLeads = leads.filter((l) => l.status === status)
-            return (
+        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden px-6 py-5">
+          <div className="flex h-full gap-4">
+            {PIPELINE_COLUMNS.map((status) => (
               <KanbanColumn
                 key={status}
                 status={status}
-                leads={colLeads}
+                leads={visibleLeads.filter((l) => l.status === status)}
+                isFiltered={isFiltered}
               />
-            )
-          })}
+            ))}
+          </div>
         </div>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeLead && <KanbanCard lead={activeLead} isDragging />}
         </DragOverlay>
       </DndContext>
@@ -125,40 +283,55 @@ export function PipelineClient({ initialLeads }: Props) {
   )
 }
 
-function KanbanColumn({ status, leads }: { status: LeadStatus; leads: PipelineLead[] }) {
+function KanbanColumn({
+  status,
+  leads,
+  isFiltered,
+}: {
+  status: LeadStatus
+  leads: PipelineLead[]
+  isFiltered: boolean
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  const accent = COLUMN_ACCENT[status]
 
   return (
-    <div
-      ref={setNodeRef}
-      className={`flex-shrink-0 w-72 rounded-xl border-2 transition-colors ${COLUMN_COLORS[status]} ${
-        isOver ? 'ring-2 ring-blue-400 ring-offset-1' : ''
+    // flex + min-h-0: la cabecera queda fija y solo la lista de tarjetas scrollea.
+    <section
+      className={`flex h-full w-[19rem] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border bg-gray-50/80 transition-colors ${
+        isOver ? `border-transparent ring-2 ${accent.ring}` : 'border-gray-200'
       }`}
     >
-      <div className="px-4 py-3 border-b border-white/50">
-        <div className="flex items-center justify-between">
-          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${COLUMN_HEADER[status]}`}>
-            {STATUS_LABELS[status]}
-          </span>
-          <span className="text-xs font-bold text-gray-500 bg-white rounded-full w-6 h-6 flex items-center justify-center">
-            {leads.length}
-          </span>
+      <div className={`h-1 shrink-0 ${accent.bar}`} />
+
+      <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${accent.dot}`} />
+          <h3 className="text-sm font-semibold text-gray-800">{STATUS_LABELS[status]}</h3>
         </div>
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${accent.count}`}
+        >
+          {leads.length}
+        </span>
       </div>
 
       <SortableContext items={leads.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-        <div className="p-3 space-y-2 min-h-[200px]">
+        <div
+          ref={setNodeRef}
+          className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3 [scrollbar-color:theme(colors.gray.300)_transparent] [scrollbar-width:thin]"
+        >
           {leads.map((lead) => (
             <KanbanCard key={lead.id} lead={lead} />
           ))}
           {leads.length === 0 && (
-            <div className="text-center py-8 text-xs text-gray-400">
-              Arrastra un lead aquí
+            <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-gray-300 px-3 text-center text-xs text-gray-400">
+              {isFiltered ? 'Sin resultados en este filtro' : 'Arrastra un lead aquí'}
             </div>
           )}
         </div>
       </SortableContext>
-    </div>
+    </section>
   )
 }
 
@@ -174,60 +347,70 @@ function KanbanCard({ lead, isDragging = false }: { lead: PipelineLead; isDraggi
   }
 
   return (
-    <div
+    <article
       ref={setNodeRef}
       style={style}
-      className={`bg-white rounded-lg border border-gray-200 shadow-sm p-3 transition-all ${
-        isThisDragging ? 'opacity-30' : ''
-      } ${isDragging ? 'shadow-xl rotate-1 opacity-95' : 'hover:shadow-md'}`}
+      className={`group rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow ${
+        isThisDragging ? 'opacity-40' : ''
+      } ${isDragging ? 'rotate-2 shadow-xl ring-1 ring-blue-400/40' : 'hover:border-gray-300 hover:shadow-md'}`}
     >
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/leads/${lead.id}`}
-          className="flex-1 min-w-0 hover:text-blue-600"
+          className="min-w-0 flex-1"
           onClick={(e) => isDragging && e.preventDefault()}
         >
-          <p className="text-sm font-medium text-gray-900 truncate leading-tight">{lead.name}</p>
+          <p className="truncate text-sm font-medium leading-tight text-gray-900 group-hover:text-blue-600">
+            {lead.name}
+          </p>
           {lead.company && (
-            <p className="text-xs text-gray-400 truncate mt-0.5">{lead.company}</p>
+            <p className="mt-0.5 truncate text-xs text-gray-500">{lead.company}</p>
           )}
         </Link>
-        <div
+        <button
+          type="button"
+          aria-label="Reordenar lead"
           {...attributes}
           {...listeners}
-          className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 mt-0.5"
+          className="-mr-1 shrink-0 cursor-grab rounded p-0.5 text-gray-300 opacity-0 transition-opacity hover:text-gray-500 focus-visible:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
         >
-          <GripVertical className="w-4 h-4" />
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Metadatos en una sola fila envolvente: mantiene la tarjeta compacta
+          para que quepan más leads visibles por columna. */}
+      {(lead.city || lead.phone || lead.rating != null) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+          {lead.city && (
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0 text-gray-400" />
+              <span className="truncate">{lead.city}</span>
+            </span>
+          )}
+          {lead.phone && (
+            <span className="inline-flex items-center gap-1">
+              <Phone className="h-3 w-3 shrink-0 text-gray-400" />
+              <span className="tabular-nums">{lead.phone}</span>
+            </span>
+          )}
+          {lead.rating != null && (
+            <span className="inline-flex items-center gap-1">
+              <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+              <span className="tabular-nums">{lead.rating.toFixed(1)}</span>
+            </span>
+          )}
         </div>
-      </div>
+      )}
 
-      <div className="mt-2 space-y-1">
-        {lead.city && (
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            <MapPin className="w-3 h-3" />
-            {lead.city}
-          </div>
-        )}
-        {lead.phone && (
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            <Phone className="w-3 h-3" />
-            {lead.phone}
-          </div>
-        )}
-        {lead.rating != null && (
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-            {lead.rating.toFixed(1)}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-gray-100 pt-2">
         <SourceBadge source={lead.source as LeadSource} />
         {lead.category && (
-          <span className="text-xs text-gray-400 truncate max-w-[90px]">{lead.category}</span>
+          <span className="truncate text-xs text-gray-400" title={lead.category}>
+            {lead.category}
+          </span>
         )}
       </div>
-    </div>
+    </article>
   )
 }

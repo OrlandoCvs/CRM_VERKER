@@ -21,6 +21,7 @@ import {
   Phone,
   Globe,
   MapPin,
+  Mail,
   Trash2,
   Edit,
   GripVertical,
@@ -28,9 +29,11 @@ import {
   FolderInput,
   X,
   ChevronRight,
+  Download,
 } from 'lucide-react'
 import { StatusBadge, SourceBadge } from '@/components/ui/Badge'
 import { LeadFormModal } from '@/components/leads/LeadFormModal'
+import { EmailComposerModal } from '@/components/email/EmailComposerModal'
 import { FolderTree } from '@/components/leads/FolderTree'
 import { FolderFormModal } from '@/components/leads/FolderFormModal'
 import { MoveToFolderModal } from '@/components/leads/MoveToFolderModal'
@@ -91,6 +94,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
   const [moveModal, setMoveModal] = useState<MoveState | null>(null)
   const [deleteFolders, setDeleteFolders] = useState<Folder[] | null>(null)
   const [drag, setDrag] = useState<DragInfo | null>(null)
+  const [emailCampaign, setEmailCampaign] = useState<Lead[] | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -199,6 +203,26 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
       return next
     })
   }
+
+  /**
+   * Selecciona una carpeta abriendo también la rama que la contiene: si se llega
+   * desde la ruta de navegación o tras borrar una carpeta, el destino podría
+   * quedar colapsado y por tanto invisible en el árbol.
+   */
+  const selectFolder = useCallback(
+    (key: string) => {
+      setSelectedFolder(key)
+      if (key === 'all' || key === 'none') return
+      const ancestors = getFolderPath(key, folders).slice(0, -1)
+      if (ancestors.length === 0) return
+      setExpanded((prev) => {
+        const next = new Set(prev)
+        for (const f of ancestors) next.add(f.id)
+        return next
+      })
+    },
+    [folders],
+  )
 
   // ---- Folder API helpers ----
   const createFolder = useCallback(
@@ -452,6 +476,9 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
   }
 
   const isRealFolder = selectedFolder !== 'all' && selectedFolder !== 'none'
+  // El conmutador solo aporta si la carpeta tiene algo anidado dentro.
+  const hasSubfolders =
+    isRealFolder && getDescendantIds(selectedFolder, folders).length > 0
 
   return (
     <DndContext
@@ -471,16 +498,26 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
               {selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
             </p>
           </div>
-          <button
-            onClick={() => {
-              setEditingLead(null)
-              setShowLeadModal(true)
-            }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo Lead
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/api/leads/export?folder=${encodeURIComponent(selectedFolder)}&sub=${includeSub ? 1 : 0}`}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              title="Exportar los leads visibles a CSV"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </a>
+            <button
+              onClick={() => {
+                setEditingLead(null)
+                setShowLeadModal(true)
+              }}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo Lead
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-5 items-start">
@@ -493,7 +530,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             selected={selectedFolder}
             expanded={expanded}
             checkedFolders={checkedFolders}
-            onSelect={setSelectedFolder}
+            onSelect={selectFolder}
             onToggle={toggleExpand}
             onToggleCheck={toggleCheckFolder}
             onClearChecks={clearFolderChecks}
@@ -539,7 +576,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                   <span key={f.id} className="flex items-center gap-1.5 min-w-0">
                     <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
                     <button
-                      onClick={() => setSelectedFolder(f.id)}
+                      onClick={() => selectFolder(f.id)}
                       className={`truncate ${
                         i === folderPath.length - 1
                           ? 'text-gray-800 font-medium'
@@ -551,7 +588,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                   </span>
                 ))}
               </div>
-              {isRealFolder && (
+              {hasSubfolders && (
                 <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -609,6 +646,15 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                   {selectedIds.size === 1 ? '' : 's'}
                 </span>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setEmailCampaign(leads.filter((l) => selectedIds.has(l.id)))
+                    }
+                    className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Enviar campaña
+                  </button>
                   <button
                     onClick={() =>
                       setMoveModal({ kind: 'leads', leadIds: [...selectedIds] })
@@ -805,6 +851,23 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
           leads={leads}
           onConfirm={handleDeleteFoldersConfirm}
           onClose={() => setDeleteFolders(null)}
+        />
+      )}
+
+      {emailCampaign && (
+        <EmailComposerModal
+          leads={emailCampaign}
+          onClose={() => setEmailCampaign(null)}
+          onSent={(sentIds, markedContacted) => {
+            if (markedContacted) {
+              const idSet = new Set(sentIds)
+              setLeads((prev) =>
+                prev.map((l) =>
+                  idSet.has(l.id) && l.status === 'new' ? { ...l, status: 'contacted' } : l,
+                ),
+              )
+            }
+          }}
         />
       )}
     </DndContext>

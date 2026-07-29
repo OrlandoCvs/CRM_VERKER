@@ -9,8 +9,8 @@ const geistSans = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'CRM',
-  description: 'Sistema CRM con integración Google Places',
+  title: 'Verker CRM',
+  description: 'Gestión de leads y campañas de correo',
 }
 
 export default function RootLayout({

@@ -22,7 +22,7 @@ interface Props {
   onAddVertex: (latlng: [number, number]) => void
 }
 
-const DEFAULT_CENTER: [number, number] = [40.4168, -3.7038] // Madrid
+const DEFAULT_CENTER: [number, number] = [23.6345, -102.5528] // México (centro del país)
 const DEFAULT_ZOOM = 5
 
 function ClickHandler({

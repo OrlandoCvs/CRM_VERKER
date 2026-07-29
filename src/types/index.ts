@@ -47,6 +47,7 @@ export interface Lead {
   updatedAt: string
   activities?: Activity[]
   contacts?: Contact[]
+  emailDeliveries?: EmailDelivery[]
 }
 
 export interface Folder {
@@ -74,6 +75,35 @@ export interface Activity {
   type: ActivityType
   note: string
   createdAt: string
+}
+
+export interface Reminder {
+  id: string
+  leadId: string
+  title: string
+  dueAt: string
+  done: boolean
+  completedAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Estado de entrega de un correo, según los eventos del webhook de Resend. */
+export type EmailDeliveryStatus = 'sent' | 'delivered' | 'bounced' | 'complained'
+
+export interface EmailDelivery {
+  id: string
+  to: string
+  subject: string
+  status: string
+  createdAt: string
+}
+
+export const EMAIL_DELIVERY_LABELS: Record<EmailDeliveryStatus, string> = {
+  sent: 'Enviado',
+  delivered: 'Entregado',
+  bounced: 'Rebotado',
+  complained: 'Marcado como spam',
 }
 
 export const STATUS_LABELS: Record<LeadStatus, string> = {

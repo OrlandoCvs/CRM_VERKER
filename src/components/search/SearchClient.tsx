@@ -8,6 +8,7 @@ import {
   MapPin,
   Star,
   Phone,
+  Mail,
   Globe,
   Plus,
   Check,
@@ -18,6 +19,7 @@ import {
   ExternalLink,
   Map,
   Trash2,
+  Sparkles,
 } from 'lucide-react'
 import { circleToGeoJsonPolygon, verticesToGeoJsonPolygon } from '@/lib/geo'
 
@@ -31,6 +33,8 @@ interface PlaceResult {
   city: string
   country: string
   phone: string
+  email?: string
+  emails?: string[]
   website: string
   totalScore: number
   reviewsCount: number
@@ -87,11 +91,13 @@ export function SearchClient() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
   const [maxResults, setMaxResults] = useState(20)
+  const [scrapeContacts, setScrapeContacts] = useState(false)
   const [results, setResults] = useState<PlaceResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imported, setImported] = useState<Set<string>>(new Set())
   const [importingId, setImportingId] = useState<string | null>(null)
+  const [importSummary, setImportSummary] = useState<string | null>(null)
   const [searchMeta, setSearchMeta] = useState<{ query: string; location: string } | null>(null)
 
   // Map mode state
@@ -126,7 +132,7 @@ export function SearchClient() {
     setError(null)
     setResults([])
 
-    const body: Record<string, unknown> = { query, maxResults }
+    const body: Record<string, unknown> = { query, maxResults, scrapeContacts }
     let metaLocation = ''
 
     if (searchMode === 'text') {
@@ -160,7 +166,8 @@ export function SearchClient() {
     }
   }
 
-  async function handleImport(place: PlaceResult) {
+  /** Importa un lead. Devuelve 'created' | 'duplicate' | 'error' para poder resumir. */
+  async function handleImport(place: PlaceResult): Promise<'created' | 'duplicate' | 'error'> {
     setImportingId(place.placeId)
     try {
       const res = await fetch('/api/apify/import', {
@@ -172,9 +179,12 @@ export function SearchClient() {
         }),
       })
       if (!res.ok) throw new Error('Error al importar')
+      const data = await res.json()
+      // Marca como "ya en el CRM" tanto los nuevos como los duplicados.
       setImported((prev) => new Set([...prev, place.placeId]))
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al importar')
+      return data.status === 'duplicate' ? 'duplicate' : 'created'
+    } catch {
+      return 'error'
     } finally {
       setImportingId(null)
     }
@@ -182,9 +192,20 @@ export function SearchClient() {
 
   async function handleImportAll() {
     const toImport = results.filter((r) => !imported.has(r.placeId))
+    let created = 0
+    let duplicates = 0
+    let errors = 0
     for (const place of toImport) {
-      await handleImport(place)
+      const result = await handleImport(place)
+      if (result === 'created') created++
+      else if (result === 'duplicate') duplicates++
+      else errors++
     }
+    // Resumen al terminar: cuántos nuevos, cuántos ya existían.
+    const parts = [`${created} importado${created === 1 ? '' : 's'}`]
+    if (duplicates > 0) parts.push(`${duplicates} ya existía${duplicates === 1 ? '' : 'n'}`)
+    if (errors > 0) parts.push(`${errors} con error`)
+    setImportSummary(parts.join(' · '))
   }
 
   return (
@@ -215,13 +236,13 @@ export function SearchClient() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-gray-600">Tipo de negocio</label>
+          <label className="text-xs font-medium text-gray-600">Negocio o palabra clave</label>
           <div className="relative">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ej: restaurante, gimnasio, dentista..."
+              placeholder="Ej: restaurante, reparación de móviles, Starbucks..."
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -236,7 +257,7 @@ export function SearchClient() {
               <input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ej: Ciudad de México, Madrid, Buenos Aires..."
+                placeholder="Ej: Ciudad de México, Guadalajara, Monterrey..."
                 className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -347,6 +368,25 @@ export function SearchClient() {
           </div>
         </div>
 
+        {/* Enriquecimiento de contactos (web scraping) */}
+        <label
+          className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+            scrapeContacts ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <Switch checked={scrapeContacts} onChange={setScrapeContacts} />
+          <div className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
+              <Sparkles className={`w-4 h-4 ${scrapeContacts ? 'text-emerald-500' : 'text-gray-400'}`} />
+              Obtener email y redes sociales
+            </span>
+            <span className="text-xs text-gray-500">
+              Visita la web de cada negocio para extraer correo y perfiles sociales.
+              Consume más créditos de Apify y la búsqueda tarda más.
+            </span>
+          </div>
+        </label>
+
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Máx. resultados</label>
@@ -398,18 +438,23 @@ export function SearchClient() {
       {/* Results */}
       {!loading && results.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-gray-600">
               <span className="font-semibold text-gray-900">{results.length}</span> resultados para{' '}
               <em>{searchMeta?.query}</em> en {searchMeta?.location}
             </p>
-            <button
-              onClick={handleImportAll}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Importar todos ({results.filter((r) => !imported.has(r.placeId)).length})
-            </button>
+            <div className="flex items-center gap-3">
+              {importSummary && (
+                <span className="text-xs font-medium text-gray-500">{importSummary}</span>
+              )}
+              <button
+                onClick={handleImportAll}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Importar todos ({results.filter((r) => !imported.has(r.placeId)).length})
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -442,6 +487,32 @@ export function SearchClient() {
         </div>
       )}
     </div>
+  )
+}
+
+function Switch({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors mt-0.5 ${
+        checked ? 'bg-emerald-500' : 'bg-gray-300'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-4' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
   )
 }
 
@@ -565,6 +636,17 @@ function PlaceCard({
             <div className="flex items-center gap-1.5">
               <Phone className="w-3.5 h-3.5 shrink-0" />
               <a href={`tel:${place.phone}`} className="hover:text-blue-600">{place.phone}</a>
+            </div>
+          )}
+          {(place.email ?? place.emails?.[0]) && (
+            <div className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+              <a
+                href={`mailto:${place.email ?? place.emails?.[0]}`}
+                className="text-emerald-600 hover:underline truncate"
+              >
+                {place.email ?? place.emails?.[0]}
+              </a>
             </div>
           )}
           {place.website && (

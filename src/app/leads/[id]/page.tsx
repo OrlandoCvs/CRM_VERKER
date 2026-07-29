@@ -19,6 +19,7 @@ type RawLead = {
   contacts: { id: string; leadId: string; name: string; email: string | null
     phone: string | null; role: string | null; createdAt: Date }[]
   activities: { id: string; leadId: string; type: string; note: string; createdAt: Date }[]
+  emailDeliveries: { id: string; to: string; subject: string; status: string; createdAt: Date }[]
 }
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +29,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     include: {
       contacts: true,
       activities: { orderBy: { createdAt: 'desc' } },
+      emailDeliveries: { orderBy: { createdAt: 'desc' } },
     },
   }) as unknown as RawLead | null
 
@@ -44,6 +46,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       ...a,
       type: a.type as 'call' | 'email' | 'meeting' | 'note',
       createdAt: a.createdAt.toISOString(),
+    })),
+    emailDeliveries: raw.emailDeliveries.map((e) => ({
+      ...e,
+      createdAt: e.createdAt.toISOString(),
     })),
   }
 

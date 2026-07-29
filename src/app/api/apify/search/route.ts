@@ -8,11 +8,12 @@ type GeoJsonGeometry = {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { query, location, area, maxResults = 20 } = body as {
+  const { query, location, area, maxResults = 20, scrapeContacts = false } = body as {
     query?: string
     location?: string
     area?: GeoJsonGeometry
     maxResults?: number
+    scrapeContacts?: boolean
   }
 
   if (!query) {
@@ -40,6 +41,9 @@ export async function POST(req: NextRequest) {
     includeHistogram: false,
     includeOpeningHours: true,
     includePeopleAlsoSearch: false,
+    // Enriquecimiento opcional: visita la web de cada negocio para extraer
+    // email y redes sociales. Consume más créditos de Apify y tarda más.
+    scrapeContacts: Boolean(scrapeContacts),
   }
   if (area) input.customGeolocation = area
 

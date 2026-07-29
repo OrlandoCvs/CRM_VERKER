@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# adjuntos de plantillas de correo (binarios subidos por el usuario)
+/uploads
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

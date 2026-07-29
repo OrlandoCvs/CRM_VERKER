@@ -38,9 +38,9 @@ export function LeafletMap({ leads, selectedId, onSelect }: Props) {
         leads.reduce((s, l) => s + l.lat, 0) / leads.length,
         leads.reduce((s, l) => s + l.lng, 0) / leads.length,
       ]
-    : [20, 0]
+    : [23.6345, -102.5528] // México (centro del país)
 
-  const zoom = leads.length === 1 ? 14 : leads.length === 0 ? 2 : 5
+  const zoom = leads.length === 1 ? 14 : leads.length === 0 ? 5 : 5
 
   return (
     <MapContainer

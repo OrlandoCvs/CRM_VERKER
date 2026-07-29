@@ -1,21 +1,30 @@
 import { prisma } from '@/lib/db'
 import { PipelineClient } from '@/components/pipeline/PipelineClient'
-import { Lead } from '@/types'
+import { Lead, Folder } from '@/types'
 
-type PipelineLead = Pick<Lead, 'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'createdAt'>
+type PipelineLead = Pick<
+  Lead,
+  'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'folderId' | 'createdAt'
+>
 
 export default async function PipelinePage() {
-  const raw = await prisma.lead.findMany({
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      id: true, name: true, company: true, status: true, source: true,
-      city: true, rating: true, phone: true, category: true,
-      createdAt: true, updatedAt: true,
-    },
-  }) as unknown as Array<{
+  const [rawLeads, rawFolders] = await Promise.all([
+    prisma.lead.findMany({
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true, name: true, company: true, status: true, source: true,
+        city: true, rating: true, phone: true, category: true,
+        folderId: true, createdAt: true, updatedAt: true,
+      },
+    }),
+    prisma.folder.findMany({ orderBy: { name: 'asc' } }),
+  ])
+
+  const raw = rawLeads as unknown as Array<{
     id: string; name: string; company: string | null; status: string
     source: string; city: string | null; rating: number | null
-    phone: string | null; category: string | null; createdAt: Date
+    phone: string | null; category: string | null; folderId: string | null
+    createdAt: Date
   }>
 
   const leads: PipelineLead[] = raw.map((l) => ({
@@ -25,5 +34,16 @@ export default async function PipelinePage() {
     createdAt: l.createdAt.toISOString(),
   }))
 
-  return <PipelineClient initialLeads={leads} />
+  const folders: Folder[] = (
+    rawFolders as unknown as Array<{
+      id: string; name: string; color: string | null
+      parentId: string | null; createdAt: Date; updatedAt: Date
+    }>
+  ).map((f) => ({
+    ...f,
+    createdAt: f.createdAt.toISOString(),
+    updatedAt: f.updatedAt.toISOString(),
+  }))
+
+  return <PipelineClient initialLeads={leads} initialFolders={folders} />
 }

@@ -10,7 +10,9 @@ import {
 } from 'lucide-react'
 import { StatusBadge, SourceBadge } from '@/components/ui/Badge'
 import { LeadFormModal } from '@/components/leads/LeadFormModal'
-import { Lead, LeadStatus, LeadSource, Activity, ActivityType, STATUS_LABELS } from '@/types'
+import { EmailComposerModal } from '@/components/email/EmailComposerModal'
+import { RemindersSection } from '@/components/leads/RemindersSection'
+import { Lead, LeadStatus, LeadSource, Activity, ActivityType, EmailDelivery, STATUS_LABELS } from '@/types'
 
 interface Props { lead: Lead }
 
@@ -38,6 +40,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
   const router = useRouter()
   const [lead, setLead] = useState<Lead>(initialLead)
   const [showEdit, setShowEdit] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
   const [activityNote, setActivityNote] = useState('')
   const [activityType, setActivityType] = useState<ActivityType>('note')
   const [savingActivity, setSavingActivity] = useState(false)
@@ -129,6 +132,14 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
           </span>
         )}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowEmail(true)}
+            disabled={!lead.email}
+            title={lead.email ? `Enviar correo a ${lead.email}` : 'Este lead no tiene email'}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5" /> Enviar correo
+          </button>
           <button
             onClick={() => setShowEdit(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -348,6 +359,9 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
             </div>
           )}
 
+          {/* Reminders / follow-up */}
+          <RemindersSection leadId={lead.id} />
+
           {/* Activity */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h4 className="font-semibold text-gray-900 mb-4">Actividad</h4>
@@ -405,6 +419,9 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
               )}
             </div>
           </div>
+
+          {/* Email history */}
+          <EmailHistory deliveries={lead.emailDeliveries ?? []} />
         </div>
 
         {/* Right sidebar */}
@@ -478,6 +495,32 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
       {showEdit && (
         <LeadFormModal lead={lead} onSave={handleSave} onClose={() => setShowEdit(false)} />
       )}
+
+      {showEmail && (
+        <EmailComposerModal
+          leads={[lead]}
+          onClose={() => setShowEmail(false)}
+          onSent={(_ids, markedContacted) => {
+            setLead((prev) => ({
+              ...prev,
+              status: markedContacted && prev.status === 'new' ? 'contacted' : prev.status,
+              activities: [
+                {
+                  id: `tmp-${Date.now()}`,
+                  leadId: prev.id,
+                  type: 'email',
+                  note: 'Correo enviado',
+                  createdAt: new Date().toISOString(),
+                },
+                ...(prev.activities ?? []),
+              ],
+            }))
+            // Recarga los datos del servidor para traer el registro real de
+            // EmailDelivery recién creado (con su asunto y estado inicial).
+            router.refresh()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -490,6 +533,60 @@ function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: stri
         <p className="text-xs text-gray-400">{label}</p>
         <div className="text-gray-700">{children}</div>
       </div>
+    </div>
+  )
+}
+
+/** Estilo del estado de entrega de cada correo. */
+const DELIVERY_STYLE: Record<string, { label: string; cls: string; dot: string }> = {
+  sent: { label: 'Enviado', cls: 'text-gray-500', dot: 'bg-gray-300' },
+  delivered: { label: 'Entregado', cls: 'text-emerald-600', dot: 'bg-emerald-500' },
+  bounced: { label: 'Rebotado', cls: 'text-red-600', dot: 'bg-red-500' },
+  complained: { label: 'Marcado como spam', cls: 'text-amber-600', dot: 'bg-amber-500' },
+}
+
+function EmailHistory({ deliveries }: { deliveries: EmailDelivery[] }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Mail className="w-4 h-4 text-gray-500" />
+        <h4 className="font-semibold text-gray-900">Correos enviados</h4>
+        {deliveries.length > 0 && (
+          <span className="text-xs text-gray-400">({deliveries.length})</span>
+        )}
+      </div>
+
+      {deliveries.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-4">
+          Aún no se ha enviado ningún correo a este lead.
+        </p>
+      ) : (
+        <div className="space-y-2.5">
+          {deliveries.map((d) => {
+            const style = DELIVERY_STYLE[d.status] ?? DELIVERY_STYLE.sent
+            return (
+              <div
+                key={d.id}
+                className="flex items-start gap-3 rounded-lg border border-gray-100 px-3 py-2.5"
+              >
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${style.dot}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-800">{d.subject}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                    <span className={`font-medium ${style.cls}`}>{style.label}</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-gray-400">{d.to}</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-gray-400">
+                      {new Date(d.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
