@@ -9,7 +9,12 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // La app usa la conexión POOLED (con -pooler): en serverless (Vercel) muchas
+  // instancias comparten el pool y no saturan la base.
   url      = env("DATABASE_URL")
+  // Las migraciones usan la conexión DIRECTA (sin -pooler): un pooler no soporta
+  // los comandos DDL/transaccionales que necesita `migrate deploy`.
+  directUrl = env("DIRECT_URL")
 }
 
 model Lead {
