@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import {
-  storeUpload,
   ALLOWED_MIME_TYPES,
   MAX_ATTACHMENT_BYTES,
 } from '@/lib/uploads'
@@ -40,7 +39,6 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   }
 
   const bytes = Buffer.from(await file.arrayBuffer())
-  const storedName = await storeUpload(bytes, file.name)
 
   const attachment = await prisma.emailAttachment.create({
     data: {
@@ -48,8 +46,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       filename: file.name,
       mimeType: file.type,
       size: file.size,
-      storedName,
+      data: bytes,
     },
+    // No devolvemos `data` (el binario) en la respuesta: solo el metadato.
     select: { id: true, filename: true, mimeType: true, size: true },
   })
 

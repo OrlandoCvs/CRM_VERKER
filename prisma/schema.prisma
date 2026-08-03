@@ -154,7 +154,9 @@ model EmailTemplate {
 }
 
 /// Archivo adjunto fijo de una plantilla: se envía siempre que se usa esa
-/// plantilla. El binario vive en disco (uploads/); aquí guardamos su metadato.
+/// plantilla. El binario se guarda en la propia base de datos (campo `data`)
+/// porque el hosting serverless (Vercel) no tiene disco persistente donde
+/// escribir. Para adjuntos de plantillas —pocos y pequeños— es adecuado.
 model EmailAttachment {
   id         String        @id @default(cuid())
   templateId String
@@ -162,7 +164,7 @@ model EmailAttachment {
   filename   String
   mimeType   String
   size       Int
-  storedName String        @unique
+  data       Bytes
   createdAt  DateTime      @default(now())
 
   @@index([templateId])

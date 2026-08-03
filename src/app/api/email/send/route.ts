@@ -8,7 +8,6 @@ import {
   type TemplateLead,
   type EmailAttachment,
 } from '@/lib/email'
-import { readUpload } from '@/lib/uploads'
 
 interface SendBody {
   leadIds?: string[]
@@ -47,28 +46,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'El asunto y el cuerpo son obligatorios' }, { status: 400 })
   }
 
-  // Los adjuntos de la plantilla se leen una sola vez y se reutilizan en cada
-  // correo, en lugar de releerlos del disco por destinatario.
+  // Los adjuntos de la plantilla se leen una sola vez (el binario vive en la
+  // base, campo `data`) y se reutilizan en cada correo.
   let attachments: EmailAttachment[] | undefined
   if (templateId) {
     const rows = await prisma.emailAttachment.findMany({ where: { templateId } })
     if (rows.length > 0) {
-      const loaded = await Promise.all(
-        rows.map(async (a) => {
-          try {
-            return {
-              filename: a.filename,
-              content: await readUpload(a.storedName),
-              contentType: a.mimeType,
-            } satisfies EmailAttachment
-          } catch {
-            // Un adjunto cuyo binario falta no debe impedir el envío del correo.
-            return null
-          }
-        }),
-      )
-      const valid = loaded.filter((a): a is EmailAttachment => a !== null)
-      if (valid.length > 0) attachments = valid
+      attachments = rows.map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.data),
+        contentType: a.mimeType,
+      } satisfies EmailAttachment))
     }
   }
 

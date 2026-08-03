@@ -127,7 +127,7 @@ CREATE TABLE "EmailAttachment" (
     "filename" TEXT NOT NULL,
     "mimeType" TEXT NOT NULL,
     "size" INTEGER NOT NULL,
-    "storedName" TEXT NOT NULL,
+    "data" BYTEA NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "EmailAttachment_pkey" PRIMARY KEY ("id")
@@ -158,9 +158,6 @@ CREATE INDEX "Reminder_leadId_idx" ON "Reminder"("leadId");
 CREATE INDEX "Reminder_done_dueAt_idx" ON "Reminder"("done", "dueAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EmailAttachment_storedName_key" ON "EmailAttachment"("storedName");
-
--- CreateIndex
 CREATE INDEX "EmailAttachment_templateId_idx" ON "EmailAttachment"("templateId");
 
 -- AddForeignKey
@@ -184,13 +181,3 @@ ALTER TABLE "Reminder" ADD CONSTRAINT "Reminder_leadId_fkey" FOREIGN KEY ("leadI
 -- AddForeignKey
 ALTER TABLE "EmailAttachment" ADD CONSTRAINT "EmailAttachment_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "EmailTemplate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-┌─────────────────────────────────────────────────────────┐
-│  Update available 5.22.0 -> 7.9.1                       │
-│                                                         │
-│  This is a major update - please follow the guide at    │
-│  https://pris.ly/d/major-version-upgrade                │
-│                                                         │
-│  Run the following to update                            │
-│    npm i --save-dev prisma@latest                       │
-│    npm i @prisma/client@latest                          │
-└─────────────────────────────────────────────────────────┘
