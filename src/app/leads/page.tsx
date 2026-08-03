@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { prisma } from '@/lib/db'
 import { LeadsClient } from '@/components/leads/LeadsClient'
 import { Lead, Folder } from '@/types'

@@ -43,4 +43,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
+# base de datos local SQLite (ya migramos a Postgres; por si queda algún .db)
+*.db
+*.db-journal

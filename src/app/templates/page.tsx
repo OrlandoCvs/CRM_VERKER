@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { prisma } from '@/lib/db'
 import { getEmailStatus } from '@/lib/email'
 import { TemplatesClient, EmailTemplate } from '@/components/email/TemplatesClient'

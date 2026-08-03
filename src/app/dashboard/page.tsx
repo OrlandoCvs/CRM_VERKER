@@ -1,3 +1,7 @@
+// Página con datos en vivo del CRM: no se prerenderiza en build, se genera en
+// cada request (necesita la base de datos, que no existe en tiempo de compilación).
+export const dynamic = 'force-dynamic'
+
 import { prisma } from '@/lib/db'
 import { DashboardClient } from '@/components/dashboard/DashboardClient'
 import { Lead, Folder } from '@/types'

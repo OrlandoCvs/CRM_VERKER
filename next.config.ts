@@ -5,9 +5,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
-  // 'standalone' genera un servidor Node autónomo en .next/standalone, que es
-  // lo que necesita Passenger (el motor de cPanel) para arrancar la app.
-  output: "standalone",
+  // Prisma se carga desde node_modules en runtime (no empaquetado en el bundle),
+  // que es lo recomendado para que resuelva su engine nativo correctamente.
+  serverExternalPackages: ["@prisma/client", "prisma"],
 };
 
 export default nextConfig;

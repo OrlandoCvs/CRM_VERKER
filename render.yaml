@@ -1,0 +1,39 @@
+# Blueprint de Render: define la app Node y su base de datos PostgreSQL.
+# Al conectar el repo en Render, este archivo crea todo automáticamente.
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: crm-verker-db
+    databaseName: crm_verker
+    plan: free # 1 GB, suficiente para empezar. Nota: el plan free expira a los 30 días.
+
+services:
+  - type: web
+    name: crm-verker
+    runtime: node
+    plan: free # se duerme tras inactividad; para producción real, subir a starter.
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crm-verker-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      # Las variables sensibles (contraseña, Resend, Apify) se configuran a mano
+      # en el panel de Render, NO aquí (este archivo va a GitHub).
+      - key: APP_PASSWORD
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_WEBHOOK_SECRET
+        sync: false
+      - key: APIFY_TOKEN
+        sync: false
+      - key: DISABLE_AUTH
+        value: "false"

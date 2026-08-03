@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { prisma } from '@/lib/db'
 import { MapClient } from '@/components/map/MapClient'
 import { MapLead } from '@/components/map/LeafletMap'

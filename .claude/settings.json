@@ -29,7 +29,31 @@
       "Bash(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/email/validate -H \"Content-Type: application/json\" -d '{\"leadIds\":[\"zz-mx-test\"]}')",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\('  nadie@dominio-muerto-xyz123abc.com ->',r.results?.[0]?.check,'\\(esperado: no_mx\\)'\\)}\\)\")",
       "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const d=new DatabaseSync\\('./dev.db'\\);d.prepare\\(\\\\\"DELETE FROM Lead WHERE id='zz-mx-test'\\\\\"\\).run\\(\\);console.log\\('  limpiado'\\)\")",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git ls-tree *)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies.next\\)\")",
+      "Bash(npm run *)",
+      "Bash(PORT=3005 timeout 6 node app.js)",
+      "Bash(curl -s -o /dev/null -w \" localhost:3005 responde -> HTTP %{http_code}\\\\n\" http://localhost:3005/login)",
+      "Bash(wait)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64'\\).replace\\(/[^a-zA-Z0-9]/g,''\\)\\)\")",
+      "Bash(rm -f src/generated/prisma-generated.zip; echo \"zip temporal borrado\")",
+      "Bash(./node_modules/.bin/prisma generate *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\(p.dependencies\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(grep -v \"Pulse\\\\|Tip\\\\|update\\\\|Update\\\\|major\\\\|npm i\\\\|guide\\\\|┌\\\\|│\\\\|└\\\\|^$\")",
+      "Bash(cp ../../.env.local .env.local)",
+      "Bash(cp ../../.env .env)",
+      "Bash(cp ../../dev.db dev.db)",
+      "Bash(PORT=3999 timeout 12 node server.js)",
+      "Bash(rm -f standalone-deploy.tar.gz)",
+      "Bash(tar -czf standalone-deploy.tar.gz standalone)",
+      "Bash(tar -tzf standalone-deploy.tar.gz)",
+      "Bash(grep -E \"^standalone/[^/]+$\")",
+      "Bash(tar -czf engines-1.0.x.tar.gz -C engines-linux .)",
+      "Bash(tar -tzf engines-1.0.x.tar.gz)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\USER\\PROYECTOS\\CRM_VERKER\\src\\generated"
     ]
   }
 }
