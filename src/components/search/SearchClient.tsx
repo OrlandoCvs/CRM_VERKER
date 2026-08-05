@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import {
@@ -87,18 +87,73 @@ function getTodayHours(openingHours?: OpeningHour[]): string | null {
   return entry ? entry.hours : null
 }
 
+/**
+ * Persistencia de la búsqueda en sessionStorage.
+ *
+ * El estado de este componente vive en memoria de React: al cambiar de pestaña
+ * del CRM, Next desmonta el componente y se perdería la búsqueda (y con ella los
+ * créditos de Apify ya gastados). Guardamos resultados, meta e importados en
+ * sessionStorage para que sobrevivan a la navegación dentro de la sesión. Se
+ * limpian solos al cerrar la pestaña o al lanzar una búsqueda nueva.
+ */
+const STORAGE_KEY = 'verker.search.v1'
+
+interface PersistedSearch {
+  results: PlaceResult[]
+  searchMeta: { query: string; location: string } | null
+  imported: string[]
+  importSummary: string | null
+}
+
+function loadPersisted(): PersistedSearch | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as PersistedSearch) : null
+  } catch {
+    return null
+  }
+}
+
 export function SearchClient() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
   const [maxResults, setMaxResults] = useState(20)
   const [scrapeContacts, setScrapeContacts] = useState(false)
-  const [results, setResults] = useState<PlaceResult[]>([])
+  // Inicialización perezosa: restaura la última búsqueda si existe en la sesión.
+  const [results, setResults] = useState<PlaceResult[]>(() => loadPersisted()?.results ?? [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [imported, setImported] = useState<Set<string>>(new Set())
+  const [imported, setImported] = useState<Set<string>>(
+    () => new Set(loadPersisted()?.imported ?? []),
+  )
   const [importingId, setImportingId] = useState<string | null>(null)
-  const [importSummary, setImportSummary] = useState<string | null>(null)
-  const [searchMeta, setSearchMeta] = useState<{ query: string; location: string } | null>(null)
+  const [importSummary, setImportSummary] = useState<string | null>(
+    () => loadPersisted()?.importSummary ?? null,
+  )
+  const [searchMeta, setSearchMeta] = useState<{ query: string; location: string } | null>(
+    () => loadPersisted()?.searchMeta ?? null,
+  )
+
+  // Cada vez que cambian los resultados/importados, se persisten en la sesión.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (results.length === 0) {
+      sessionStorage.removeItem(STORAGE_KEY)
+      return
+    }
+    const toSave: PersistedSearch = {
+      results,
+      searchMeta,
+      imported: [...imported],
+      importSummary,
+    }
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+    } catch {
+      // Si el volumen excediera la cuota de sessionStorage, no rompemos la UI.
+    }
+  }, [results, searchMeta, imported, importSummary])
 
   // Map mode state
   const [searchMode, setSearchMode] = useState<'text' | 'map'>('text')
@@ -447,6 +502,18 @@ export function SearchClient() {
               {importSummary && (
                 <span className="text-xs font-medium text-gray-500">{importSummary}</span>
               )}
+              <button
+                onClick={() => {
+                  setResults([])
+                  setSearchMeta(null)
+                  setImported(new Set())
+                  setImportSummary(null)
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Limpiar
+              </button>
               <button
                 onClick={handleImportAll}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"

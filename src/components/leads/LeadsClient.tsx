@@ -30,6 +30,7 @@ import {
   X,
   ChevronRight,
   Download,
+  Upload,
 } from 'lucide-react'
 import { StatusBadge, SourceBadge } from '@/components/ui/Badge'
 import { LeadFormModal } from '@/components/leads/LeadFormModal'
@@ -38,6 +39,7 @@ import { FolderTree } from '@/components/leads/FolderTree'
 import { FolderFormModal } from '@/components/leads/FolderFormModal'
 import { MoveToFolderModal } from '@/components/leads/MoveToFolderModal'
 import { DeleteFoldersModal } from '@/components/leads/DeleteFoldersModal'
+import { ImportCsvModal } from '@/components/leads/ImportCsvModal'
 import {
   Lead,
   Folder,
@@ -90,6 +92,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
 
   const [showLeadModal, setShowLeadModal] = useState(false)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
+  const [showImportCsv, setShowImportCsv] = useState(false)
   const [folderForm, setFolderForm] = useState<FolderFormState | null>(null)
   const [moveModal, setMoveModal] = useState<MoveState | null>(null)
   const [deleteFolders, setDeleteFolders] = useState<Folder[] | null>(null)
@@ -499,6 +502,14 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowImportCsv(true)}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              title="Importar contactos desde un archivo CSV"
+            >
+              <Upload className="h-4 w-4" />
+              Importar
+            </button>
             <a
               href={`/api/leads/export?folder=${encodeURIComponent(selectedFolder)}&sub=${includeSub ? 1 : 0}`}
               className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
@@ -798,6 +809,16 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             setShowLeadModal(false)
             setEditingLead(null)
           }}
+        />
+      )}
+
+      {showImportCsv && (
+        <ImportCsvModal
+          folderId={selectedFolder}
+          onClose={() => setShowImportCsv(false)}
+          // Tras importar (potencialmente cientos de leads), recargamos la vista
+          // para traer todos los nuevos registros del servidor de una vez.
+          onImported={() => window.location.reload()}
         />
       )}
 
