@@ -5,47 +5,61 @@ import { IMPORTABLE_FIELDS, type ImportableFieldKey } from '@/lib/csv-mapping'
 
 /**
  * POST /api/leads/import-csv
- * Importa contactos desde un CSV ya parseado en el cliente.
+ * Importa un LOTE de contactos desde un CSV parseado en el cliente.
+ *
+ * El cliente trocea el archivo y envía tandas (p. ej. 100 filas) para mostrar
+ * progreso y no exceder el tiempo máximo de una función serverless. Cada llamada
+ * procesa un lote y devuelve el detalle (creados, duplicados, y errores por fila
+ * con su motivo, para que el usuario pueda corregir y reimportar).
  *
  * Body: {
- *   rows: string[][],                       // filas de datos (sin cabecera)
+ *   rows: string[][],                       // filas del lote (sin cabecera)
  *   mapping: Record<fieldKey, columnIndex>, // qué columna alimenta cada campo
- *   folderId?: string | null                // carpeta destino (opcional)
+ *   folderId?: string | null,               // carpeta destino (opcional)
+ *   rowOffset?: number                       // índice de la 1ª fila del lote en el
+ *                                            // archivo completo (para reportar bien)
  * }
- *
- * Reutiliza la deduplicación de leads: los contactos que ya existen (por
- * teléfono, web o nombre+ciudad) se cuentan como duplicados y no se recrean.
  */
 
 interface ImportBody {
   rows?: string[][]
   mapping?: Partial<Record<ImportableFieldKey, number>>
   folderId?: string | null
+  rowOffset?: number
 }
 
-/** Máximo de filas por petición: evita cargas gigantes y timeouts en serverless. */
-const MAX_ROWS = 5000
+interface RowError {
+  row: number // número de fila en el archivo (1 = primera fila de datos)
+  name: string
+  reason: string
+}
+
+/** Máximo de filas por lote: acotado para no acercarse al límite de tiempo. */
+const MAX_BATCH = 200
+
+/** Validación laxa de email: solo descarta lo evidentemente mal formado. */
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
 
 export async function POST(req: NextRequest) {
-  const { rows, mapping, folderId } = (await req.json().catch(() => ({}))) as ImportBody
+  const { rows, mapping, folderId, rowOffset = 0 } =
+    (await req.json().catch(() => ({}))) as ImportBody
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return Response.json({ error: 'No hay filas para importar' }, { status: 400 })
   }
-  if (rows.length > MAX_ROWS) {
+  if (rows.length > MAX_BATCH) {
     return Response.json(
-      { error: `El archivo tiene ${rows.length} filas; el máximo por importación es ${MAX_ROWS}.` },
+      { error: `Lote demasiado grande (${rows.length}). Máximo ${MAX_BATCH} por petición.` },
       { status: 400 },
     )
   }
   if (!mapping || mapping.name === undefined) {
-    return Response.json(
-      { error: 'Debes asignar al menos la columna de Nombre' },
-      { status: 400 },
-    )
+    return Response.json({ error: 'Debes asignar al menos la columna de Nombre' }, { status: 400 })
   }
 
-  // Si se indicó carpeta, verifica que exista (evita violar la FK).
+  // Verifica la carpeta destino una sola vez por lote (evita violar la FK).
   let targetFolderId: string | null = null
   if (folderId) {
     const folder = await prisma.folder.findUnique({ where: { id: folderId }, select: { id: true } })
@@ -54,7 +68,6 @@ export async function POST(req: NextRequest) {
 
   const fieldKeys = IMPORTABLE_FIELDS.map((f) => f.key)
 
-  /** Extrae el valor de una celda para un campo, o null si no está mapeado/vacío. */
   function cell(row: string[], key: ImportableFieldKey): string | null {
     const idx = mapping![key]
     if (idx === undefined) return null
@@ -64,15 +77,15 @@ export async function POST(req: NextRequest) {
 
   let created = 0
   let duplicates = 0
-  let skipped = 0 // filas sin nombre (no se pueden importar)
-  let errors = 0
+  const errors: RowError[] = []
 
-  // Inserción secuencial: la dedup consulta la base y con miles de filas conviene
-  // no dispararlas todas en paralelo (saturaría el pool de conexiones).
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const fileRow = rowOffset + i + 1 // 1-indexado respecto al archivo completo
     const name = cell(row, 'name')
+
     if (!name) {
-      skipped++
+      errors.push({ row: fileRow, name: '(sin nombre)', reason: 'Falta el nombre' })
       continue
     }
 
@@ -80,6 +93,14 @@ export async function POST(req: NextRequest) {
     for (const key of fieldKeys) {
       if (key === 'name') continue
       data[key] = cell(row, key)
+    }
+
+    // Email con formato claramente inválido: se descarta el valor pero NO la fila
+    // (el contacto se importa igual, solo sin email, y se avisa).
+    let emailWarning = false
+    if (data.email && !looksLikeEmail(data.email)) {
+      data.email = null
+      emailWarning = true
     }
 
     try {
@@ -112,10 +133,13 @@ export async function POST(req: NextRequest) {
         },
       })
       created++
+      if (emailWarning) {
+        errors.push({ row: fileRow, name, reason: 'Email inválido (se importó sin email)' })
+      }
     } catch {
-      errors++
+      errors.push({ row: fileRow, name, reason: 'Error al guardar en la base' })
     }
   }
 
-  return Response.json({ created, duplicates, skipped, errors, total: rows.length })
+  return Response.json({ created, duplicates, errors })
 }

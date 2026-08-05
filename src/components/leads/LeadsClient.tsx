@@ -815,7 +815,10 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
       {showImportCsv && (
         <ImportCsvModal
           folderId={selectedFolder}
+          folders={folders}
           onClose={() => setShowImportCsv(false)}
+          // Refleja al instante una carpeta creada durante el import en el árbol.
+          onFolderCreated={(folder) => setFolders((prev) => [...prev, folder])}
           // Tras importar (potencialmente cientos de leads), recargamos la vista
           // para traer todos los nuevos registros del servidor de una vez.
           onImported={() => window.location.reload()}
