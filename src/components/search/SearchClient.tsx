@@ -22,6 +22,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { circleToGeoJsonPolygon, verticesToGeoJsonPolygon } from '@/lib/geo'
+import { ApifyUsage } from '@/components/search/ApifyUsage'
 
 interface OpeningHour { day: string; hours: string }
 
@@ -265,11 +266,15 @@ export function SearchClient() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Buscar Negocios</h2>
-        <p className="text-gray-500 text-sm mt-0.5">
-          Encuentra negocios en Google Places y agrégalos como leads
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Buscar Negocios</h2>
+          <p className="text-gray-500 text-sm mt-0.5">
+            Encuentra negocios en Google Places y agrégalos como leads
+          </p>
+        </div>
+        {/* Saldo de Apify a la vista: cada búsqueda consume créditos. */}
+        <ApifyUsage />
       </div>
 
       {/* Search form */}
