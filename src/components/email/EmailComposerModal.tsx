@@ -5,6 +5,10 @@ import {
   X, Mail, Send, Loader2, AlertTriangle, Check, Save,
   Users, Eye, ChevronDown, ShieldCheck,
 } from 'lucide-react'
+import {
+  AttachmentPreview,
+  type PreviewableAttachment,
+} from '@/components/email/AttachmentPreview'
 
 /** Variables disponibles para interpolar (debe coincidir con TEMPLATE_VARIABLES de lib/email). */
 const VARIABLES: { key: string; label: string }[] = [
@@ -39,6 +43,7 @@ interface EmailTemplate {
   name: string
   subject: string
   body: string
+  attachments?: PreviewableAttachment[]
 }
 
 interface EmailStatus {
@@ -112,6 +117,10 @@ export function EmailComposerModal({ leads, title, onClose, onSent }: Props) {
   }, [])
 
   const previewLead = withEmail[0] ?? leads[0]
+
+  // Adjuntos que se enviarán: los de la plantilla elegida, si hay alguna.
+  const previewAttachments =
+    templates.find((t) => t.id === selectedTemplate)?.attachments ?? []
 
   function applyTemplate(id: string) {
     setSelectedTemplate(id)
@@ -528,6 +537,13 @@ export function EmailComposerModal({ leads, title, onClose, onSent }: Props) {
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">
                         {renderPreview(body, previewLead) || <span className="text-gray-300">(vacío)</span>}
                       </p>
+                      {/* Los adjuntos de la plantilla viajan con el correo: se
+                          muestran aquí para confirmarlos antes de enviar. */}
+                      {previewAttachments.length > 0 && (
+                        <div className="pt-2">
+                          <AttachmentPreview attachments={previewAttachments} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

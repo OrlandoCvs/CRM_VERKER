@@ -335,6 +335,8 @@ function AttachmentsSection({
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Adjunto desplegado en vista previa (uno a la vez, para no cargar varios PDF).
+  const [previewId, setPreviewId] = useState<string | null>(null)
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0 || !templateId) return
@@ -386,24 +388,72 @@ function AttachmentsSection({
         <>
           {attachments.length > 0 && (
             <ul className="flex flex-col gap-1.5">
-              {attachments.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm"
-                >
-                  <FileIcon className="h-4 w-4 shrink-0 text-blue-500" />
-                  <span className="min-w-0 flex-1 truncate text-gray-700">{a.filename}</span>
-                  <span className="shrink-0 text-xs text-gray-400">{formatSize(a.size)}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(a.id)}
-                    className="shrink-0 rounded p-0.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
-                    aria-label={`Quitar ${a.filename}`}
+              {attachments.map((a) => {
+                const viewable =
+                  a.mimeType === 'application/pdf' || a.mimeType.startsWith('image/')
+                const open = previewId === a.id
+                return (
+                  <li
+                    key={a.id}
+                    className="overflow-hidden rounded-md border border-gray-200 bg-white text-sm"
                   >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
+                    <div className="flex items-center gap-2 px-2.5 py-1.5">
+                      <FileIcon className="h-4 w-4 shrink-0 text-blue-500" />
+                      <span className="min-w-0 flex-1 truncate text-gray-700">{a.filename}</span>
+                      <span className="shrink-0 text-xs text-gray-400">{formatSize(a.size)}</span>
+                      {viewable && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewId(open ? null : a.id)}
+                          className="shrink-0 rounded px-1.5 py-0.5 text-xs text-blue-600 transition-colors hover:bg-blue-50"
+                        >
+                          {open ? 'Ocultar' : 'Ver'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(a.id)}
+                        className="shrink-0 rounded p-0.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                        aria-label={`Quitar ${a.filename}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {open && viewable && (
+                      <div className="border-t border-gray-200 bg-gray-100">
+                        {a.mimeType === 'application/pdf' ? (
+                          <object
+                            data={`/api/email/attachments/${a.id}#toolbar=0&navpanes=0`}
+                            type="application/pdf"
+                            className="h-[380px] w-full"
+                            aria-label={`Vista previa de ${a.filename}`}
+                          >
+                            <div className="p-4 text-center text-xs text-gray-500">
+                              Tu navegador no puede mostrar el PDF aquí.{' '}
+                              <a
+                                href={`/api/email/attachments/${a.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline hover:text-blue-700"
+                              >
+                                Ábrelo en otra pestaña
+                              </a>
+                              .
+                            </div>
+                          </object>
+                        ) : (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={`/api/email/attachments/${a.id}`}
+                            alt={a.filename}
+                            className="mx-auto max-h-[380px] w-auto"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
 
