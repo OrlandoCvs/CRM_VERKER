@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Folder as FolderIcon,
   ChevronRight,
@@ -13,6 +13,9 @@ import {
   Layers,
   Inbox,
   X,
+  Search,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from 'lucide-react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { Folder, FOLDER_COLORS, DEFAULT_FOLDER_COLOR } from '@/types'
@@ -40,12 +43,39 @@ interface FolderTreeProps {
   onRecolor: (folder: Folder, color: string) => void
   dragType: 'lead' | 'folder' | null
   draggingFolderId: string | null
+  /** Expande o contrae todo el árbol de una vez. */
+  onExpandAll?: () => void
+  onCollapseAll?: () => void
 }
 
 export function FolderTree(props: FolderTreeProps) {
   const { folders, allCount, noneCount, selected, dragType, draggingFolderId } = props
-  const tree = buildFolderTree(folders)
+  const [query, setQuery] = useState('')
   const checkedCount = props.checkedFolders.size
+
+  /**
+   * Al buscar se conservan las carpetas que coinciden y también sus ancestros,
+   * porque si no, un resultado anidado quedaría huérfano y no se vería.
+   */
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return folders
+    const byId = new Map(folders.map((f) => [f.id, f]))
+    const keep = new Set<string>()
+    for (const f of folders) {
+      if (!f.name.toLowerCase().includes(q)) continue
+      keep.add(f.id)
+      let parentId = f.parentId
+      while (parentId && byId.has(parentId) && !keep.has(parentId)) {
+        keep.add(parentId)
+        parentId = byId.get(parentId)?.parentId ?? null
+      }
+    }
+    return folders.filter((f) => keep.has(f.id))
+  }, [folders, query])
+
+  const tree = buildFolderTree(filtered)
+  const searching = query.trim().length > 0
 
   // While dragging a folder, these targets would create a cycle — disable them.
   const invalidDropIds =
@@ -53,23 +83,71 @@ export function FolderTree(props: FolderTreeProps) {
       ? new Set([draggingFolderId, ...getDescendantIds(draggingFolderId, folders)])
       : new Set<string>()
 
+  const hasNesting = folders.some((f) => f.parentId)
+
   return (
-    <div className="w-64 shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <span className="text-sm font-semibold text-gray-700">Carpetas</span>
-        <button
-          onClick={props.onNewRoot}
-          title="Nueva carpeta"
-          className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
-        >
-          <FolderPlus className="w-4 h-4" />
-          Nueva
-        </button>
+    <div className="w-64 shrink-0 flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Carpetas</span>
+          {folders.length > 0 && (
+            <span className="text-[11px] text-gray-400 tabular-nums">{folders.length}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-0.5">
+          {hasNesting && (
+            <>
+              <button
+                onClick={props.onExpandAll}
+                title="Expandir todo"
+                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded"
+              >
+                <ChevronsUpDown className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={props.onCollapseAll}
+                title="Contraer todo"
+                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded"
+              >
+                <ChevronsDownUp className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+          <button
+            onClick={props.onNewRoot}
+            title="Nueva carpeta"
+            className="flex items-center gap-1 ml-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700"
+          >
+            <FolderPlus className="w-4 h-4" />
+            Nueva
+          </button>
+        </div>
       </div>
 
+      {folders.length > 5 && (
+        <div className="relative border-b border-gray-100 dark:border-gray-800 px-2 py-2">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar carpeta…"
+            className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 py-1.5 pl-7 pr-6 text-xs text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {searching && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {checkedCount > 0 && (
-        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-red-50 border-b border-red-100">
-          <span className="text-xs font-medium text-red-700">
+        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-red-50 dark:bg-red-500/10 border-b border-red-100 dark:border-red-500/20">
+          <span className="text-xs font-medium text-red-700 dark:text-red-400">
             {checkedCount} {checkedCount === 1 ? 'carpeta' : 'carpetas'}
           </span>
           <div className="flex items-center gap-1">
@@ -92,39 +170,56 @@ export function FolderTree(props: FolderTreeProps) {
       )}
 
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-        {/* All leads */}
-        <button
-          onClick={() => props.onSelect('all')}
-          className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${
-            selected === 'all' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <Layers className="w-4 h-4 shrink-0 text-gray-400" />
-          <span className="flex-1 text-left">Todos los leads</span>
-          <CountBadge n={allCount} active={selected === 'all'} />
-        </button>
+        {/* Vistas generales: se ocultan al buscar, porque no son carpetas. */}
+        {!searching && (
+          <>
+            <button
+              onClick={() => props.onSelect('all')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${
+                selected === 'all'
+                  ? 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Layers className="w-4 h-4 shrink-0 text-gray-400" />
+              <span className="flex-1 text-left">Todos los leads</span>
+              <CountBadge n={allCount} active={selected === 'all'} />
+            </button>
 
-        {/* Unfiled leads — also a drop target */}
-        <UnfiledRow
-          count={noneCount}
-          selected={selected === 'none'}
-          onSelect={() => props.onSelect('none')}
-          dragType={dragType}
-        />
+            <UnfiledRow
+              count={noneCount}
+              selected={selected === 'none'}
+              onSelect={() => props.onSelect('none')}
+              dragType={dragType}
+            />
 
-        {tree.length > 0 && <div className="my-1.5 border-t border-gray-100" />}
+            {tree.length > 0 && <div className="my-1.5 border-t border-gray-100 dark:border-gray-800" />}
+          </>
+        )}
 
         {tree.map((node) => (
-          <FolderRow key={node.id} node={node} {...props} invalidDropIds={invalidDropIds} />
+          <FolderRow
+            key={node.id}
+            node={node}
+            {...props}
+            invalidDropIds={invalidDropIds}
+            forceExpanded={searching}
+          />
         ))}
+
+        {searching && tree.length === 0 && (
+          <p className="px-2 py-6 text-center text-xs text-gray-400">
+            Ninguna carpeta coincide.
+          </p>
+        )}
 
         {folders.length === 0 && (
           <div className="px-2 py-6 text-center">
-            <FolderIcon className="w-7 h-7 mx-auto text-gray-200 mb-1.5" />
+            <FolderIcon className="w-7 h-7 mx-auto text-gray-200 dark:text-gray-700 mb-1.5" />
             <p className="text-xs text-gray-400">Aún no tienes carpetas.</p>
             <button
               onClick={props.onNewRoot}
-              className="text-xs text-blue-600 hover:underline mt-1"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
             >
               Crear la primera
             </button>
@@ -138,8 +233,10 @@ export function FolderTree(props: FolderTreeProps) {
 function CountBadge({ n, active }: { n: number; active: boolean }) {
   return (
     <span
-      className={`text-xs font-medium rounded-full px-1.5 min-w-[20px] text-center ${
-        active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+      className={`text-xs font-medium rounded-full px-1.5 min-w-[20px] text-center tabular-nums ${
+        active
+          ? 'bg-blue-100 dark:bg-blue-500/25 text-blue-700 dark:text-blue-300'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
       }`}
     >
       {n}
@@ -169,8 +266,12 @@ function UnfiledRow({
       ref={setNodeRef}
       onClick={onSelect}
       className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${
-        highlight ? 'ring-2 ring-blue-400 bg-blue-50' : ''
-      } ${selected ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+        highlight ? 'ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-500/15' : ''
+      } ${
+        selected
+          ? 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 font-medium'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+      }`}
     >
       <Inbox className="w-4 h-4 shrink-0 text-gray-400" />
       <span className="flex-1 text-left">Sin carpeta</span>
@@ -179,12 +280,17 @@ function UnfiledRow({
   )
 }
 
-type RowProps = FolderTreeProps & { node: FolderNode; invalidDropIds: Set<string> }
+type RowProps = FolderTreeProps & {
+  node: FolderNode
+  invalidDropIds: Set<string>
+  /** Durante una búsqueda todo se muestra abierto para ver los resultados. */
+  forceExpanded?: boolean
+}
 
-function FolderRow({ node, invalidDropIds, ...p }: RowProps) {
+function FolderRow({ node, invalidDropIds, forceExpanded, ...p }: RowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const hasChildren = node.children.length > 0
-  const isExpanded = p.expanded.has(node.id)
+  const isExpanded = forceExpanded || p.expanded.has(node.id)
   const isSelected = p.selected === node.id
   const isChecked = p.checkedFolders.has(node.id)
   const color = node.color ?? DEFAULT_FOLDER_COLOR
@@ -216,28 +322,41 @@ function FolderRow({ node, invalidDropIds, ...p }: RowProps) {
           highlight ? 'ring-2 ring-blue-400' : ''
         } ${
           isChecked
-            ? 'bg-red-50'
+            ? 'bg-red-50 dark:bg-red-500/10'
             : isSelected
-              ? 'bg-blue-50'
-              : 'hover:bg-gray-50'
+              ? 'bg-blue-50 dark:bg-blue-500/15'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
         } ${isDragging ? 'opacity-40' : ''}`}
       >
         <input
           type="checkbox"
           checked={isChecked}
           onChange={() => p.onToggleCheck(node.id)}
-          className="ml-2 mr-0.5 rounded border-gray-300 cursor-pointer shrink-0"
+          className="ml-2 mr-0.5 rounded border-gray-300 dark:border-gray-600 cursor-pointer shrink-0"
           aria-label={`Seleccionar carpeta ${node.name}`}
         />
 
-        <div
-          className="flex items-center gap-1 flex-1 min-w-0"
-          style={{ paddingLeft: node.depth * 14 }}
-        >
+        <div className="flex items-center gap-1 flex-1 min-w-0 relative">
+          {/* Guías de jerarquía: una línea por nivel, para leer el anidamiento. */}
+          {node.depth > 0 && (
+            <span
+              aria-hidden
+              className="shrink-0 self-stretch flex"
+              style={{ width: node.depth * 14 }}
+            >
+              {Array.from({ length: node.depth }).map((_, i) => (
+                <span
+                  key={i}
+                  className="block w-[14px] border-l border-gray-200 dark:border-gray-700"
+                />
+              ))}
+            </span>
+          )}
+
           {hasChildren ? (
             <button
               onClick={() => p.onToggle(node.id)}
-              className="p-0.5 text-gray-400 hover:text-gray-700 shrink-0"
+              className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
               aria-label={isExpanded ? 'Contraer' : 'Expandir'}
             >
               {isExpanded ? (
@@ -255,19 +374,27 @@ function FolderRow({ node, invalidDropIds, ...p }: RowProps) {
             {...listeners}
             {...attributes}
             onClick={() => p.onSelect(node.id)}
+            title={node.name}
             className={`flex items-center gap-2 flex-1 min-w-0 py-2 pr-1 text-sm text-left cursor-grab active:cursor-grabbing ${
-              isSelected ? 'text-blue-700 font-medium' : 'text-gray-700'
+              isSelected
+                ? 'text-blue-700 dark:text-blue-300 font-medium'
+                : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <FolderIcon className="w-4 h-4 shrink-0" style={{ color }} fill={color} />
             <span className="truncate flex-1">{node.name}</span>
+            {hasChildren && !isExpanded && (
+              <span className="shrink-0 text-[10px] text-gray-400 tabular-nums">
+                {node.children.length}
+              </span>
+            )}
           </button>
 
           <CountBadge n={count} active={isSelected} />
 
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="p-1 mr-1 text-gray-300 hover:text-gray-700 opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
+            className="p-1 mr-1 text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
             aria-label="Opciones de carpeta"
           >
             <MoreVertical className="w-4 h-4" />
@@ -289,7 +416,13 @@ function FolderRow({ node, invalidDropIds, ...p }: RowProps) {
 
       {isExpanded &&
         node.children.map((child) => (
-          <FolderRow key={child.id} node={child} invalidDropIds={invalidDropIds} {...p} />
+          <FolderRow
+            key={child.id}
+            node={child}
+            invalidDropIds={invalidDropIds}
+            forceExpanded={forceExpanded}
+            {...p}
+          />
         ))}
     </div>
   )
@@ -327,12 +460,12 @@ function FolderMenu({
     <>
       {/* click-away backdrop */}
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-1 top-9 z-50 w-52 bg-white rounded-xl border border-gray-200 shadow-xl py-1">
+      <div className="absolute right-1 top-9 z-50 w-52 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl py-1">
         <MenuItem icon={FolderPlus} label="Nueva subcarpeta" onClick={run(onNewChild)} />
         <MenuItem icon={Pencil} label="Renombrar / color" onClick={run(onEdit)} />
         <MenuItem icon={FolderInput} label="Mover a…" onClick={run(onMove)} />
 
-        <div className="px-3 py-2 border-t border-gray-100">
+        <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-700">
           <p className="text-[11px] text-gray-400 mb-1.5">Color rápido</p>
           <div className="flex items-center gap-1.5">
             {FOLDER_COLORS.map((c) => (
@@ -341,7 +474,7 @@ function FolderMenu({
                 onClick={run(() => onRecolor(c))}
                 className={`w-5 h-5 rounded-md transition-transform hover:scale-110 ${
                   (folder.color ?? DEFAULT_FOLDER_COLOR) === c
-                    ? 'ring-2 ring-offset-1 ring-gray-400'
+                    ? 'ring-2 ring-offset-1 dark:ring-offset-gray-800 ring-gray-400'
                     : ''
                 }`}
                 style={{ backgroundColor: c }}
@@ -351,7 +484,7 @@ function FolderMenu({
           </div>
         </div>
 
-        <div className="border-t border-gray-100">
+        <div className="border-t border-gray-100 dark:border-gray-700">
           <MenuItem icon={Trash2} label="Eliminar carpeta" danger onClick={run(onDelete)} />
         </div>
       </div>
@@ -374,7 +507,9 @@ function MenuItem({
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
-        danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'
+        danger
+          ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
       }`}
     >
       <Icon className="w-4 h-4 shrink-0" />

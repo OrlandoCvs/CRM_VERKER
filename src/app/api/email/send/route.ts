@@ -4,7 +4,8 @@ import {
   getEmailStatus,
   sendEmail,
   renderTemplate,
-  textToHtml,
+  bodyToHtml,
+  bodyToPlainText,
   type TemplateLead,
   type EmailAttachment,
 } from '@/lib/email'
@@ -85,13 +86,15 @@ export async function POST(req: NextRequest) {
 
     const templateLead: TemplateLead = lead
     const renderedSubject = renderTemplate(subject, templateLead)
-    const renderedText = renderTemplate(body, templateLead)
+    // El cuerpo puede ser HTML (editor nuevo) o texto plano (plantillas
+    // antiguas); ambos se resuelven aquí a las dos versiones del correo.
+    const renderedBody = renderTemplate(body, templateLead)
 
     const result = await sendEmail({
       to: email,
       subject: renderedSubject,
-      text: renderedText,
-      html: textToHtml(renderedText),
+      text: bodyToPlainText(renderedBody),
+      html: bodyToHtml(renderedBody),
       replyTo: replyTo?.trim() || undefined,
       attachments,
     })

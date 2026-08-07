@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check,
   ChevronDown,
@@ -62,14 +62,21 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
     return flat.filter((f) => f.name.toLowerCase().includes(needle))
   }, [flat, query])
 
+  /** Cierra el desplegable y descarta la búsqueda, para que la próxima
+   *  apertura empiece limpia. */
+  const close = useCallback(() => {
+    setOpen(false)
+    setQuery('')
+  }, [])
+
   // Cierra al hacer clic fuera o con Escape.
   useEffect(() => {
     if (!open) return
     const onClick = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
+      if (!containerRef.current?.contains(e.target as Node)) close()
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') close()
     }
     document.addEventListener('mousedown', onClick)
     document.addEventListener('keydown', onKey)
@@ -77,11 +84,10 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
       document.removeEventListener('mousedown', onClick)
       document.removeEventListener('keydown', onKey)
     }
-  }, [open])
+  }, [open, close])
 
   useEffect(() => {
     if (open) searchRef.current?.focus()
-    else setQuery('')
   }, [open])
 
   const selected = folders.find((f) => f.id === value)
@@ -100,7 +106,7 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
 
   const select = (key: string) => {
     onChange(key)
-    setOpen(false)
+    close()
   }
 
   return (
@@ -112,8 +118,8 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
         aria-expanded={open}
         className={`flex max-w-[16rem] items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
           open
-            ? 'border-blue-400 bg-white ring-2 ring-blue-100'
-            : 'border-gray-300 bg-white hover:border-gray-400'
+            ? 'border-blue-400 bg-white dark:bg-gray-900 ring-2 ring-blue-100'
+            : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-400'
         }`}
       >
         {value === FOLDER_ALL ? (
@@ -127,8 +133,8 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
             fill={selected?.color ?? DEFAULT_FOLDER_COLOR}
           />
         )}
-        <span className="truncate font-medium text-gray-800">{label}</span>
-        <span className="shrink-0 rounded-full bg-gray-100 px-1.5 text-xs font-medium tabular-nums text-gray-600">
+        <span className="truncate font-medium text-gray-800 dark:text-gray-200">{label}</span>
+        <span className="shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 text-xs font-medium tabular-nums text-gray-600 dark:text-gray-400">
           {activeCount}
         </span>
         <ChevronDown
@@ -146,23 +152,23 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
       {open && (
         <div
           role="listbox"
-          className="absolute left-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
+          className="absolute left-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl"
         >
           {flat.length > 6 && (
-            <div className="relative border-b border-gray-100 p-2">
+            <div className="relative border-b border-gray-100 dark:border-gray-800 p-2">
               <Search className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
               <input
                 ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar carpeta…"
-                className="w-full rounded-lg border border-gray-200 py-1.5 pl-8 pr-7 text-sm outline-none focus:border-blue-400"
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-800 py-1.5 pl-8 pr-7 text-sm outline-none focus:border-blue-400"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label="Limpiar búsqueda"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -188,7 +194,7 @@ export function FolderPicker({ folders, value, onChange, counts, allCount, noneC
                   active={value === FOLDER_NONE}
                   onClick={() => select(FOLDER_NONE)}
                 />
-                {flat.length > 0 && <div className="my-1.5 border-t border-gray-100" />}
+                {flat.length > 0 && <div className="my-1.5 border-t border-gray-100 dark:border-gray-800" />}
               </>
             )}
 
@@ -246,7 +252,7 @@ function Option({
       aria-selected={active}
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-lg py-2 pr-2 text-sm transition-colors ${
-        active ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+        active ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
       }`}
       style={{ paddingLeft: 10 + indent * 14 }}
     >
@@ -254,7 +260,7 @@ function Option({
       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
       <span
         className={`shrink-0 rounded-full px-1.5 text-xs font-medium tabular-nums ${
-          active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+          active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
         }`}
       >
         {count}

@@ -12,9 +12,9 @@ const LeafletMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full flex flex-col items-center justify-center gap-3 bg-gray-50">
+      <div className="h-full flex flex-col items-center justify-center gap-3 bg-gray-50 dark:bg-gray-900">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <p className="text-sm text-gray-500">Cargando mapa...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Cargando mapa...</p>
       </div>
     ),
   }
@@ -50,22 +50,22 @@ export function MapClient({ leads, allLeadsCount, leadsWithoutCoords }: Props) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Left panel */}
-      <div className="w-72 shrink-0 bg-white border-r border-gray-200 flex flex-col">
-        <div className="px-4 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900 text-base">Mapa de Leads</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+      <div className="w-72 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+        <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="font-bold text-gray-900 dark:text-gray-100 text-base">Mapa de Leads</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {leads.length} de {allLeadsCount} leads con coordenadas
           </p>
         </div>
 
         {/* Status filter */}
-        <div className="px-4 py-3 border-b border-gray-100">
-          <p className="text-xs font-medium text-gray-500 mb-2">Filtrar por estado</p>
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por estado</p>
           <div className="space-y-1">
             <button
               onClick={() => setStatusFilter(null)}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                statusFilter === null ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+                statusFilter === null ? 'bg-gray-900 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               <span className="w-2.5 h-2.5 rounded-full bg-gray-400 shrink-0" />
@@ -78,7 +78,7 @@ export function MapClient({ leads, allLeadsCount, leadsWithoutCoords }: Props) {
                   key={s}
                   onClick={() => setStatusFilter(s === statusFilter ? null : s)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    statusFilter === s ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+                    statusFilter === s ? 'bg-gray-900 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
@@ -91,29 +91,29 @@ export function MapClient({ leads, allLeadsCount, leadsWithoutCoords }: Props) {
 
         {/* Selected lead info */}
         {selectedLead && (
-          <div className="px-4 py-3 border-b border-gray-100 bg-blue-50">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-blue-50">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-gray-900 truncate">{selectedLead.name}</p>
+                <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">{selectedLead.name}</p>
                 {selectedLead.category && (
-                  <p className="text-xs text-gray-500 mt-0.5">{selectedLead.category}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{selectedLead.category}</p>
                 )}
               </div>
-              <button onClick={() => setSelectedId(null)} className="text-gray-400 hover:text-gray-600 text-xs shrink-0">✕</button>
+              <button onClick={() => setSelectedId(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xs shrink-0">✕</button>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[selectedLead.status as LeadStatus]}`}>
                 {STATUS_LABELS[selectedLead.status as LeadStatus]}
               </span>
               {selectedLead.rating != null && (
-                <span className="flex items-center gap-1 text-xs text-gray-600">
+                <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                   <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                   {selectedLead.rating.toFixed(1)}
                 </span>
               )}
             </div>
             {selectedLead.city && (
-              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> {selectedLead.city}
               </p>
             )}
@@ -129,7 +129,7 @@ export function MapClient({ leads, allLeadsCount, leadsWithoutCoords }: Props) {
         {/* Leads without coords */}
         {leadsWithoutCoords.length > 0 && (
           <div className="flex-1 overflow-y-auto">
-            <div className="px-4 py-2 sticky top-0 bg-white border-b border-gray-100">
+            <div className="px-4 py-2 sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
               <p className="text-xs font-medium text-gray-400">{leadsWithoutCoords.length} sin coordenadas</p>
             </div>
             <div className="divide-y divide-gray-50">
@@ -137,11 +137,11 @@ export function MapClient({ leads, allLeadsCount, leadsWithoutCoords }: Props) {
                 <Link
                   key={l.id}
                   href={`/leads/${l.id}`}
-                  className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[l.status] ?? 'bg-gray-400'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-700 truncate">{l.name}</p>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{l.name}</p>
                     {l.city && <p className="text-xs text-gray-400 truncate">{l.city}</p>}
                   </div>
                 </Link>
@@ -154,9 +154,9 @@ export function MapClient({ leads, allLeadsCount, leadsWithoutCoords }: Props) {
       {/* Map */}
       <div className="flex-1 relative">
         {filtered.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center gap-3 bg-gray-50">
-            <MapPin className="w-12 h-12 text-gray-200" />
-            <p className="text-gray-500 text-sm">No hay leads con coordenadas para este filtro</p>
+          <div className="h-full flex flex-col items-center justify-center gap-3 bg-gray-50 dark:bg-gray-900">
+            <MapPin className="w-12 h-12 text-gray-200 dark:text-gray-700" />
+            <p className="text-gray-500 dark:text-gray-400 text-sm">No hay leads con coordenadas para este filtro</p>
             <Link href="/search" className="text-sm text-blue-600 hover:underline">
               Buscar e importar leads →
             </Link>

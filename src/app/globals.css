@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
+/* Tailwind 4 usa `prefers-color-scheme` por defecto. Lo cambiamos a una clase
+   en <html> para que el usuario pueda elegir el tema desde la interfaz. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f9fafb;
   --foreground: #111827;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --input-bg: #ffffff;
+}
+
+.dark {
+  --background: #0f1115;
+  --foreground: #e5e7eb;
+  --surface: #171a21;
+  --border: #2a2f3a;
+  --input-bg: #1c2029;
 }
 
 @theme inline {
@@ -16,13 +31,22 @@ body {
   color: var(--foreground);
 }
 
+/* Evita el destello de tema claro antes de que React monte. */
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
 .input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  background: white;
+  background: var(--input-bg);
+  color: var(--foreground);
   outline: none;
   transition: box-shadow 0.15s, border-color 0.15s;
 }
@@ -32,3 +56,110 @@ body {
   box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
 }
 
+/* Red de seguridad para el tema oscuro: los controles de formulario que no
+   lleven clases propias de fondo se verían blancos sobre la interfaz oscura.
+   Solo actúa cuando la clase de Tailwind no ha fijado ya un fondo. */
+.dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([class*='bg-']),
+.dark textarea:not([class*='bg-']),
+.dark select:not([class*='bg-']) {
+  background-color: var(--input-bg);
+  color: var(--foreground);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6b7280;
+}
+
+/* Las opciones de un <select> las pinta el sistema: sin esto quedan
+   blancas sobre blanco en algunos navegadores. */
+.dark select option {
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+
+/* ---------------------------------------------------------------
+   Editor de correo enriquecido
+   El contenido lo escribe el usuario, así que los estilos se aplican
+   por etiqueta: dentro del editor no hay clases de Tailwind.
+   --------------------------------------------------------------- */
+
+.rich-editor {
+  outline: none;
+}
+
+.rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.rich-editor ul,
+.rich-editor ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.rich-editor ul { list-style: disc; }
+.rich-editor ol { list-style: decimal; }
+.rich-editor li { margin: 0.15rem 0; }
+
+.rich-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.rich-editor blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 0.85rem;
+  margin: 0.6rem 0;
+  color: #6b7280;
+}
+
+.dark .rich-editor blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+.rich-editor hr {
+  border: none;
+  border-top: 1px solid #d1d5db;
+  margin: 0.9rem 0;
+}
+
+.dark .rich-editor hr { border-top-color: #4b5563; }
+
+.rich-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+}
+
+.rich-editor table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+
+.rich-editor td,
+.rich-editor th {
+  border: 1px solid #d1d5db;
+  padding: 0.35rem 0.6rem;
+}
+
+.dark .rich-editor td,
+.dark .rich-editor th { border-color: #4b5563; }
+
+/* Marca visual de las variables {{campo}} dentro del editor. */
+.rich-editor .crm-var {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.dark .rich-editor .crm-var {
+  background: #1e3a5f;
+  color: #93c5fd;
+}

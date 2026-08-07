@@ -41,6 +41,10 @@ export interface Lead {
   // JSON strings
   openingHours?: string | null
   webResults?: string | null
+  // Entregabilidad del correo (la actualiza el webhook de Resend)
+  emailStatus?: string | null
+  emailStatusAt?: string | null
+  emailStatusReason?: string | null
   // Folder organization
   folderId?: string | null
   createdAt: string
@@ -115,11 +119,11 @@ export const STATUS_LABELS: Record<LeadStatus, string> = {
 }
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {
-  new: 'bg-blue-100 text-blue-800',
-  contacted: 'bg-yellow-100 text-yellow-800',
-  negotiating: 'bg-purple-100 text-purple-800',
-  won: 'bg-green-100 text-green-800',
-  lost: 'bg-red-100 text-red-800',
+  new: 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
+  contacted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
+  negotiating: 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300',
+  won: 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
+  lost: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
 }
 
 export const SOURCE_LABELS: Record<LeadSource, string> = {

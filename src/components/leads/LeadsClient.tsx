@@ -495,8 +495,8 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Leads</h2>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Leads</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
               {filtered.length} de {leads.length} leads
               {selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
             </p>
@@ -504,7 +504,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowImportCsv(true)}
-              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
               title="Importar contactos desde un archivo CSV"
             >
               <Upload className="h-4 w-4" />
@@ -512,7 +512,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             </button>
             <a
               href={`/api/leads/export?folder=${encodeURIComponent(selectedFolder)}&sub=${includeSub ? 1 : 0}`}
-              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
               title="Exportar los leads visibles a CSV"
             >
               <Download className="h-4 w-4" />
@@ -543,6 +543,8 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             checkedFolders={checkedFolders}
             onSelect={selectFolder}
             onToggle={toggleExpand}
+            onExpandAll={() => setExpanded(new Set(folders.map((f) => f.id)))}
+            onCollapseAll={() => setExpanded(new Set())}
             onToggleCheck={toggleCheckFolder}
             onClearChecks={clearFolderChecks}
             onDeleteChecked={() =>
@@ -570,7 +572,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
           <div className="flex-1 min-w-0 space-y-4">
             {/* Breadcrumb / context */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5 text-sm text-gray-500 min-w-0">
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 min-w-0">
                 <button
                   onClick={() => setSelectedFolder('all')}
                   className="hover:text-gray-800"
@@ -579,18 +581,18 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                 </button>
                 {selectedFolder === 'none' && (
                   <>
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-                    <span className="text-gray-800 font-medium">Sin carpeta</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                    <span className="text-gray-800 dark:text-gray-200 font-medium">Sin carpeta</span>
                   </>
                 )}
                 {folderPath.map((f, i) => (
                   <span key={f.id} className="flex items-center gap-1.5 min-w-0">
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 shrink-0" />
                     <button
                       onClick={() => selectFolder(f.id)}
                       className={`truncate ${
                         i === folderPath.length - 1
-                          ? 'text-gray-800 font-medium'
+                          ? 'text-gray-800 dark:text-gray-200 font-medium'
                           : 'hover:text-gray-800'
                       }`}
                     >
@@ -600,12 +602,12 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                 ))}
               </div>
               {hasSubfolders && (
-                <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={includeSub}
                     onChange={(e) => setIncludeSub(e.target.checked)}
-                    className="rounded border-gray-300"
+                    className="rounded border-gray-300 dark:border-gray-700"
                   />
                   Incluir subcarpetas
                 </label>
@@ -620,13 +622,13 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Buscar por nombre, ciudad, notas, estado…"
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Todos los estados</option>
                 {(Object.entries(STATUS_LABELS) as [LeadStatus, string][]).map(([k, v]) => (
@@ -638,7 +640,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
               <select
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Todas las fuentes</option>
                 {(Object.entries(SOURCE_LABELS) as [LeadSource, string][]).map(([k, v]) => (
@@ -670,7 +672,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                     onClick={() =>
                       setMoveModal({ kind: 'leads', leadIds: [...selectedIds] })
                     }
-                    className="flex items-center gap-1.5 bg-white text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
+                    className="flex items-center gap-1.5 bg-white dark:bg-gray-900 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
                   >
                     <FolderInput className="w-4 h-4" />
                     Mover a carpeta
@@ -703,7 +705,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             )}
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
               {filtered.length === 0 ? (
                 <div className="py-16 text-center text-gray-400">
                   <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -713,7 +715,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100 bg-gray-50">
+                      <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
                         <th className="w-10 px-3 py-3">
                           <SelectAllCheckbox
                             checked={allFilteredSelected}
@@ -721,25 +723,25 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
                             onChange={toggleAll}
                           />
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Nombre
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Contacto
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Ubicación
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Carpeta
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Rating
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Fuente
                         </th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">
                           Estado
                         </th>
                         <th className="px-4 py-3"></th>
@@ -777,9 +779,9 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
       {/* Drag preview */}
       <DragOverlay dropAnimation={null}>
         {drag?.type === 'lead' && (
-          <div className="bg-white rounded-lg border border-blue-300 shadow-xl px-3 py-2 text-sm flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-blue-300 shadow-xl px-3 py-2 text-sm flex items-center gap-2">
             <GripVertical className="w-4 h-4 text-blue-400" />
-            <span className="font-medium text-gray-800">
+            <span className="font-medium text-gray-800 dark:text-gray-200">
               {drag.count > 1
                 ? `${drag.count} leads`
                 : leads.find((l) => l.id === drag.leadId)?.name ?? 'Lead'}
@@ -787,13 +789,13 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
           </div>
         )}
         {drag?.type === 'folder' && (
-          <div className="bg-white rounded-lg border border-blue-300 shadow-xl px-3 py-2 text-sm flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-blue-300 shadow-xl px-3 py-2 text-sm flex items-center gap-2">
             <FolderIcon
               className="w-4 h-4"
               style={{ color: folderById.get(drag.folderId)?.color ?? DEFAULT_FOLDER_COLOR }}
               fill={folderById.get(drag.folderId)?.color ?? DEFAULT_FOLDER_COLOR}
             />
-            <span className="font-medium text-gray-800">
+            <span className="font-medium text-gray-800 dark:text-gray-200">
               {folderById.get(drag.folderId)?.name ?? 'Carpeta'}
             </span>
           </div>
@@ -919,7 +921,7 @@ function SelectAllCheckbox({
       type="checkbox"
       checked={checked}
       onChange={onChange}
-      className="rounded border-gray-300 cursor-pointer"
+      className="rounded border-gray-300 dark:border-gray-700 cursor-pointer"
       aria-label="Seleccionar todos"
     />
   )
@@ -950,7 +952,7 @@ function LeadRow({
       ref={setNodeRef}
       className={`group transition-colors ${
         isDragging ? 'opacity-40' : ''
-      } ${selected ? 'bg-blue-50/70' : 'hover:bg-gray-50'}`}
+      } ${selected ? 'bg-blue-50/70' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
     >
       <td className="px-3 py-3">
         <div className="flex items-center gap-1">
@@ -958,13 +960,13 @@ function LeadRow({
             type="checkbox"
             checked={selected}
             onChange={onToggle}
-            className="rounded border-gray-300 cursor-pointer"
+            className="rounded border-gray-300 dark:border-gray-700 cursor-pointer"
             aria-label={`Seleccionar ${lead.name}`}
           />
           <button
             {...attributes}
             {...listeners}
-            className="p-0.5 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="p-0.5 text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 focus:opacity-100"
             aria-label="Arrastrar lead"
           >
             <GripVertical className="w-4 h-4" />
@@ -973,7 +975,7 @@ function LeadRow({
       </td>
       <td className="px-4 py-3">
         <Link href={`/leads/${lead.id}`} className="hover:text-blue-600">
-          <p className="font-medium text-gray-900 truncate max-w-[180px]">{lead.name}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[180px]">{lead.name}</p>
           {lead.company && (
             <p className="text-xs text-gray-400 truncate max-w-[180px]">{lead.company}</p>
           )}
@@ -982,13 +984,13 @@ function LeadRow({
       <td className="px-4 py-3">
         <div className="space-y-0.5">
           {lead.phone && (
-            <div className="flex items-center gap-1 text-gray-600">
+            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
               <Phone className="w-3 h-3" />
               <span className="text-xs">{lead.phone}</span>
             </div>
           )}
           {lead.website && (
-            <div className="flex items-center gap-1 text-gray-600">
+            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
               <Globe className="w-3 h-3" />
               <a
                 href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
@@ -1004,7 +1006,7 @@ function LeadRow({
       </td>
       <td className="px-4 py-3">
         {(lead.city || lead.country) && (
-          <div className="flex items-center gap-1 text-gray-600">
+          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
             <MapPin className="w-3 h-3 shrink-0" />
             <span className="text-xs truncate max-w-[120px]">
               {[lead.city, lead.country].filter(Boolean).join(', ')}
@@ -1020,10 +1022,10 @@ function LeadRow({
               style={{ color: folder.color ?? DEFAULT_FOLDER_COLOR }}
               fill={folder.color ?? DEFAULT_FOLDER_COLOR}
             />
-            <span className="text-xs text-gray-600 truncate">{folder.name}</span>
+            <span className="text-xs text-gray-600 dark:text-gray-400 truncate">{folder.name}</span>
           </span>
         ) : (
-          <span className="text-xs text-gray-300">—</span>
+          <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
         )}
       </td>
       <td className="px-4 py-3">

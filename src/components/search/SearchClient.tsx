@@ -75,7 +75,7 @@ const SearchAreaMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[400px] bg-gray-50 rounded-xl border border-gray-200 animate-pulse" />
+      <div className="h-[400px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 animate-pulse" />
     ),
   },
 )
@@ -268,8 +268,8 @@ export function SearchClient() {
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Buscar Negocios</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Buscar Negocios</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
             Encuentra negocios en Google Places y agrégalos como leads
           </p>
         </div>
@@ -278,9 +278,9 @@ export function SearchClient() {
       </div>
 
       {/* Search form */}
-      <form onSubmit={handleSearch} className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <form onSubmit={handleSearch} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
         {/* Mode toggle */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
           <ModeTab
             active={searchMode === 'text'}
             onClick={() => setSearchMode('text')}
@@ -296,14 +296,14 @@ export function SearchClient() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-gray-600">Negocio o palabra clave</label>
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Negocio o palabra clave</label>
           <div className="relative">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ej: restaurante, reparación de móviles, Starbucks..."
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -311,14 +311,14 @@ export function SearchClient() {
 
         {searchMode === 'text' ? (
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Ubicación</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Ubicación</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Ej: Ciudad de México, Guadalajara, Monterrey..."
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -327,8 +327,8 @@ export function SearchClient() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-600">Forma:</span>
-                <div className="flex gap-1 bg-gray-100 p-0.5 rounded-md">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Forma:</span>
+                <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-md">
                   <ShapeTab
                     active={shape === 'circle'}
                     onClick={() => { setShape('circle'); clearShape() }}
@@ -346,7 +346,7 @@ export function SearchClient() {
                   <button
                     type="button"
                     onClick={() => setVertices((v) => v.slice(0, -1))}
-                    className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1"
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 border border-gray-200 dark:border-gray-800 rounded-md px-2 py-1"
                   >
                     Quitar último vértice
                   </button>
@@ -363,7 +363,7 @@ export function SearchClient() {
               </div>
             </div>
 
-            <div className="h-[400px] rounded-xl overflow-hidden border border-gray-200">
+            <div className="h-[400px] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
               <SearchAreaMap
                 mode={shape}
                 center={center}
@@ -376,7 +376,7 @@ export function SearchClient() {
 
             {shape === 'circle' ? (
               <div className="flex items-center gap-3">
-                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   Radio
                 </label>
                 <input
@@ -388,20 +388,20 @@ export function SearchClient() {
                   onChange={(e) => setRadiusKm(Number(e.target.value))}
                   className="flex-1 accent-blue-600"
                 />
-                <span className="text-xs font-medium text-gray-700 w-16 text-right">
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16 text-right">
                   {radiusKm} km
                 </span>
               </div>
             ) : (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Haz clic en el mapa para añadir vértices. Necesitas al menos 3 para formar
                 un polígono. Vértices actuales:{' '}
-                <span className="font-medium text-gray-700">{vertices.length}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300">{vertices.length}</span>
               </p>
             )}
 
             {shape === 'circle' && !center && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Haz clic en el mapa para fijar el centro del círculo.
               </p>
             )}
@@ -409,7 +409,7 @@ export function SearchClient() {
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-gray-600">Categorías rápidas</label>
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Categorías rápidas</label>
           <div className="flex flex-wrap gap-2">
             {QUICK_CATEGORIES.map((cat) => (
               <button
@@ -419,7 +419,7 @@ export function SearchClient() {
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                   query === cat
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-blue-300 hover:text-blue-600'
                 }`}
               >
                 {cat}
@@ -431,16 +431,16 @@ export function SearchClient() {
         {/* Enriquecimiento de contactos (web scraping) */}
         <label
           className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-            scrapeContacts ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
+            scrapeContacts ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 dark:border-gray-800 hover:border-gray-300'
           }`}
         >
           <Switch checked={scrapeContacts} onChange={setScrapeContacts} />
           <div className="flex flex-col gap-0.5">
-            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-gray-200">
               <Sparkles className={`w-4 h-4 ${scrapeContacts ? 'text-emerald-500' : 'text-gray-400'}`} />
               Obtener email y redes sociales
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               Visita la web de cada negocio para extraer correo y perfiles sociales.
               Consume más créditos de Apify y la búsqueda tarda más.
             </span>
@@ -449,11 +449,11 @@ export function SearchClient() {
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Máx. resultados</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">Máx. resultados</label>
             <select
               value={maxResults}
               onChange={(e) => setMaxResults(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={10}>10</option>
               <option value={20}>20</option>
@@ -488,9 +488,9 @@ export function SearchClient() {
 
       {/* Loading state */}
       {loading && (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">Buscando en Google Places via Apify...</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Buscando en Google Places via Apify...</p>
           <p className="text-gray-400 text-xs mt-1">Esto puede tomar 30-60 segundos</p>
         </div>
       )}
@@ -499,13 +499,13 @@ export function SearchClient() {
       {!loading && results.length > 0 && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-gray-600">
-              <span className="font-semibold text-gray-900">{results.length}</span> resultados para{' '}
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{results.length}</span> resultados para{' '}
               <em>{searchMeta?.query}</em> en {searchMeta?.location}
             </p>
             <div className="flex items-center gap-3">
               {importSummary && (
-                <span className="text-xs font-medium text-gray-500">{importSummary}</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{importSummary}</span>
               )}
               <button
                 onClick={() => {
@@ -514,7 +514,7 @@ export function SearchClient() {
                   setImported(new Set())
                   setImportSummary(null)
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 Limpiar
@@ -544,9 +544,9 @@ export function SearchClient() {
       )}
 
       {!loading && results.length === 0 && !error && searchMeta && (
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-          <Search className="w-8 h-8 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500 text-sm">No se encontraron resultados</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 py-16 text-center">
+          <Search className="w-8 h-8 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No se encontraron resultados</p>
           <p className="text-gray-400 text-xs mt-1">Prueba con otros términos o área</p>
         </div>
       )}
@@ -580,7 +580,7 @@ function Switch({
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+        className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-900 shadow transition-transform ${
           checked ? 'translate-x-4' : 'translate-x-0.5'
         }`}
       />
@@ -604,7 +604,7 @@ function ModeTab({
       type="button"
       onClick={onClick}
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-        active ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+        active ? 'bg-white dark:bg-gray-900 text-blue-700 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
       }`}
     >
       <Icon className="w-3.5 h-3.5" />
@@ -627,7 +627,7 @@ function ShapeTab({
       type="button"
       onClick={onClick}
       className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-        active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+        active ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'
       }`}
     >
       {label}
@@ -657,10 +657,10 @@ function PlaceCard({
     : place.url
 
   return (
-    <div className={`bg-white rounded-xl border flex flex-col gap-0 overflow-hidden hover:shadow-md transition-shadow ${isClosed ? 'border-red-100' : 'border-gray-200'}`}>
+    <div className={`bg-white dark:bg-gray-900 rounded-xl border flex flex-col gap-0 overflow-hidden hover:shadow-md transition-shadow ${isClosed ? 'border-red-100' : 'border-gray-200 dark:border-gray-800'}`}>
       {/* Image */}
       {place.imageUrl && (
-        <div className="h-32 bg-gray-100 overflow-hidden relative">
+        <div className="h-32 bg-gray-100 dark:bg-gray-800 overflow-hidden relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={place.imageUrl} alt={place.title} className="w-full h-full object-cover" />
           {isClosed && (
@@ -677,10 +677,10 @@ function PlaceCard({
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 text-sm truncate">{place.title}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{place.title}</h4>
             <div className="flex items-center gap-2 mt-0.5">
               {place.categoryName && <p className="text-xs text-gray-400 truncate">{place.categoryName}</p>}
-              {place.price && <span className="text-xs text-gray-500 font-medium shrink-0">{place.price}</span>}
+              {place.price && <span className="text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">{place.price}</span>}
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
@@ -697,7 +697,7 @@ function PlaceCard({
         </div>
 
         {/* Contact + Location */}
-        <div className="space-y-1.5 text-xs text-gray-500">
+        <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
           {place.address && (
             <div className="flex items-start gap-1.5">
               <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -768,7 +768,7 @@ function PlaceCard({
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <ExternalLink className="w-3 h-3" /> Maps
           </a>
@@ -779,7 +779,7 @@ function PlaceCard({
               isImported
                 ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
                 : isImporting
-                ? 'bg-gray-50 text-gray-500 border border-gray-200 cursor-wait'
+                ? 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 cursor-wait'
                 : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
             }`}
           >

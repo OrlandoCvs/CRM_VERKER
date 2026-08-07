@@ -8,11 +8,11 @@ import {
   Edit, Trash2, Plus, MessageSquare, PhoneCall, AtSign, CalendarDays,
   Clock, ExternalLink,
 } from 'lucide-react'
-import { StatusBadge, SourceBadge } from '@/components/ui/Badge'
+import { SourceBadge } from '@/components/ui/Badge'
 import { LeadFormModal } from '@/components/leads/LeadFormModal'
 import { EmailComposerModal } from '@/components/email/EmailComposerModal'
 import { RemindersSection } from '@/components/leads/RemindersSection'
-import { Lead, LeadStatus, LeadSource, Activity, ActivityType, EmailDelivery, STATUS_LABELS } from '@/types'
+import { Lead, LeadStatus, LeadSource, ActivityType, EmailDelivery, STATUS_LABELS } from '@/types'
 
 interface Props { lead: Lead }
 
@@ -122,10 +122,10 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
   return (
     <div className="p-6 max-w-6xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/leads" className="text-gray-400 hover:text-gray-600 p-1 rounded">
+        <Link href="/leads" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h2 className="text-xl font-bold text-gray-900 flex-1 truncate">{lead.name}</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex-1 truncate">{lead.name}</h2>
         {(lead.permanentlyClosed || lead.temporarilyClosed) && (
           <span className="text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-700">
             {lead.permanentlyClosed ? 'CERRADO PERM.' : 'TEMP. CERRADO'}
@@ -142,7 +142,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
           </button>
           <button
             onClick={() => setShowEdit(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <Edit className="w-3.5 h-3.5" /> Editar
           </button>
@@ -159,9 +159,9 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
         {/* Main column */}
         <div className="xl:col-span-2 space-y-4">
           {/* Lead image + basic info */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             {lead.imageUrl && (
-              <div className="h-48 bg-gray-100 overflow-hidden">
+              <div className="h-48 bg-gray-100 dark:bg-gray-800 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={lead.imageUrl} alt={lead.name} className="w-full h-full object-cover" />
               </div>
@@ -169,13 +169,13 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
             <div className="p-5">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
-                  {lead.company && <p className="text-sm text-gray-500">{lead.company}</p>}
-                  {lead.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{lead.description}</p>}
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{lead.name}</h3>
+                  {lead.company && <p className="text-sm text-gray-500 dark:text-gray-400">{lead.company}</p>}
+                  {lead.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{lead.description}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-col">
                   <SourceBadge source={lead.source as LeadSource} />
-                  {lead.price && <span className="text-xs text-gray-500 font-medium">{lead.price}</span>}
+                  {lead.price && <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{lead.price}</span>}
                 </div>
               </div>
 
@@ -232,7 +232,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
               </div>
 
               {lead.address && (
-                <div className="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600">
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-600 dark:text-gray-400">
                   <p className="font-medium text-gray-400 text-xs mb-1">DIRECCIÓN</p>
                   <div className="flex items-start gap-2">
                     <span>{lead.address}</span>
@@ -246,16 +246,16 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
               )}
 
               {lead.notes && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                   <p className="font-medium text-gray-400 text-xs mb-1">NOTAS</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{lead.notes}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{lead.notes}</p>
                 </div>
               )}
 
               {lead.sourceQuery && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                   <p className="font-medium text-gray-400 text-xs mb-1">BÚSQUEDA ORIGEN</p>
-                  <p className="text-sm text-gray-600">{lead.sourceQuery}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{lead.sourceQuery}</p>
                 </div>
               )}
             </div>
@@ -263,9 +263,9 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
 
           {/* Mini map */}
           {osmEmbedUrl && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-blue-500" /> Ubicación en Mapa
                 </h4>
                 {mapsUrl && (
@@ -289,8 +289,8 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
 
           {/* Social Media */}
           {hasSocial && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h4 className="font-semibold text-gray-900 mb-3 text-sm">Redes Sociales</h4>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm">Redes Sociales</h4>
               <div className="flex flex-wrap gap-3">
                 {socialLinks.map((s) => (
                   <a
@@ -310,8 +310,8 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
 
           {/* Opening Hours */}
           {openingHours && openingHours.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h4 className="font-semibold text-gray-900 mb-3 text-sm flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-500" /> Horario
               </h4>
               <div className="space-y-1.5">
@@ -323,8 +323,8 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                       key={day}
                       className={`flex justify-between text-sm px-2 py-1 rounded ${isToday ? 'bg-blue-50 font-medium' : ''}`}
                     >
-                      <span className={isToday ? 'text-blue-700' : 'text-gray-600'}>{DAYS_ES[day] ?? day}</span>
-                      <span className={entry?.hours === 'Closed' ? 'text-red-500' : isToday ? 'text-blue-700' : 'text-gray-700'}>
+                      <span className={isToday ? 'text-blue-700' : 'text-gray-600 dark:text-gray-400'}>{DAYS_ES[day] ?? day}</span>
+                      <span className={entry?.hours === 'Closed' ? 'text-red-500' : isToday ? 'text-blue-700' : 'text-gray-700 dark:text-gray-300'}>
                         {entry ? entry.hours : '—'}
                       </span>
                     </div>
@@ -336,8 +336,8 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
 
           {/* Web Results */}
           {webResults && webResults.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h4 className="font-semibold text-gray-900 mb-3 text-sm flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm flex items-center gap-2">
                 <Globe className="w-4 h-4 text-blue-500" /> Resultados Web
               </h4>
               <div className="space-y-3">
@@ -352,7 +352,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                       {r.title}
                     </a>
                     <p className="text-xs text-green-700 mt-0.5 truncate">{r.url}</p>
-                    {r.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{r.description}</p>}
+                    {r.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{r.description}</p>}
                   </div>
                 ))}
               </div>
@@ -363,13 +363,13 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
           <RemindersSection leadId={lead.id} />
 
           {/* Activity */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h4 className="font-semibold text-gray-900 mb-4">Actividad</h4>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Actividad</h4>
             <div className="flex gap-2 mb-4">
               <select
                 value={activityType}
                 onChange={(e) => setActivityType(e.target.value as ActivityType)}
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
+                className="px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
               >
                 {(Object.entries(ACTIVITY_LABELS) as [ActivityType, string][]).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -379,7 +379,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                 value={activityNote}
                 onChange={(e) => setActivityNote(e.target.value)}
                 placeholder="Añadir nota de actividad..."
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onKeyDown={(e) => { if (e.key === 'Enter') addActivity() }}
               />
               <button
@@ -399,19 +399,19 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                   const Icon = ACTIVITY_ICONS[a.type as ActivityType] ?? MessageSquare
                   return (
                     <div key={a.id} className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-gray-500" />
+                      <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                        <Icon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-gray-700">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                             {ACTIVITY_LABELS[a.type as ActivityType]}
                           </span>
                           <span className="text-xs text-gray-400">
                             {new Date(a.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mt-0.5">{a.note}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{a.note}</p>
                       </div>
                     </div>
                   )
@@ -426,8 +426,8 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
 
         {/* Right sidebar */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h4 className="font-semibold text-gray-900 mb-3">Estado del Lead</h4>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Estado del Lead</h4>
             <div className="space-y-2">
               {(Object.entries(STATUS_LABELS) as [LeadStatus, string][]).map(([k, v]) => (
                 <button
@@ -436,7 +436,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     lead.status === k
                       ? 'bg-blue-600 text-white font-medium'
-                      : 'text-gray-600 hover:bg-gray-50 border border-gray-100'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800'
                   }`}
                 >
                   {v}
@@ -445,9 +445,9 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h4 className="font-semibold text-gray-900 mb-2">Información</h4>
-            <div className="space-y-2 text-xs text-gray-500">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Información</h4>
+            <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex justify-between">
                 <span>Creado</span>
                 <span>{new Date(lead.createdAt).toLocaleDateString('es')}</span>
@@ -457,9 +457,9 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                 <span>{new Date(lead.updatedAt).toLocaleDateString('es')}</span>
               </div>
               {lead.placeId && (
-                <div className="pt-2 border-t border-gray-100">
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
                   <p className="text-gray-400 mb-1">Google Place ID</p>
-                  <p className="font-mono text-xs break-all text-gray-600">{lead.placeId}</p>
+                  <p className="font-mono text-xs break-all text-gray-600 dark:text-gray-400">{lead.placeId}</p>
                 </div>
               )}
             </div>
@@ -483,7 +483,7 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
               href={`https://www.google.com/maps/place/?q=place_id:${lead.placeId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
               Ver en Google Places
@@ -531,7 +531,7 @@ function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: stri
       <span className="text-gray-400 mt-0.5 shrink-0">{icon}</span>
       <div>
         <p className="text-xs text-gray-400">{label}</p>
-        <div className="text-gray-700">{children}</div>
+        <div className="text-gray-700 dark:text-gray-300">{children}</div>
       </div>
     </div>
   )
@@ -539,7 +539,7 @@ function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: stri
 
 /** Estilo del estado de entrega de cada correo. */
 const DELIVERY_STYLE: Record<string, { label: string; cls: string; dot: string }> = {
-  sent: { label: 'Enviado', cls: 'text-gray-500', dot: 'bg-gray-300' },
+  sent: { label: 'Enviado', cls: 'text-gray-500 dark:text-gray-400', dot: 'bg-gray-300' },
   delivered: { label: 'Entregado', cls: 'text-emerald-600', dot: 'bg-emerald-500' },
   bounced: { label: 'Rebotado', cls: 'text-red-600', dot: 'bg-red-500' },
   complained: { label: 'Marcado como spam', cls: 'text-amber-600', dot: 'bg-amber-500' },
@@ -547,10 +547,10 @@ const DELIVERY_STYLE: Record<string, { label: string; cls: string; dot: string }
 
 function EmailHistory({ deliveries }: { deliveries: EmailDelivery[] }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Mail className="w-4 h-4 text-gray-500" />
-        <h4 className="font-semibold text-gray-900">Correos enviados</h4>
+        <Mail className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <h4 className="font-semibold text-gray-900 dark:text-gray-100">Correos enviados</h4>
         {deliveries.length > 0 && (
           <span className="text-xs text-gray-400">({deliveries.length})</span>
         )}
@@ -567,16 +567,16 @@ function EmailHistory({ deliveries }: { deliveries: EmailDelivery[] }) {
             return (
               <div
                 key={d.id}
-                className="flex items-start gap-3 rounded-lg border border-gray-100 px-3 py-2.5"
+                className="flex items-start gap-3 rounded-lg border border-gray-100 dark:border-gray-800 px-3 py-2.5"
               >
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${style.dot}`} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-800">{d.subject}</p>
+                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{d.subject}</p>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                     <span className={`font-medium ${style.cls}`}>{style.label}</span>
-                    <span className="text-gray-300">·</span>
+                    <span className="text-gray-300 dark:text-gray-600">·</span>
                     <span className="text-gray-400">{d.to}</span>
-                    <span className="text-gray-300">·</span>
+                    <span className="text-gray-300 dark:text-gray-600">·</span>
                     <span className="text-gray-400">
                       {new Date(d.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })}
                     </span>

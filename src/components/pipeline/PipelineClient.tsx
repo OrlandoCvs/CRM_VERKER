@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Star, Phone, MapPin, GripVertical, Search, X } from 'lucide-react'
+import { Star, Phone, MapPin, GripVertical, Search, X, MailWarning } from 'lucide-react'
 import { SourceBadge } from '@/components/ui/Badge'
 import { FolderPicker, FOLDER_ALL, FOLDER_NONE } from '@/components/leads/FolderPicker'
 import { Lead, Folder, LeadStatus, LeadSource, STATUS_LABELS, PIPELINE_COLUMNS } from '@/types'
@@ -34,25 +34,25 @@ const COLUMN_ACCENT: Record<LeadStatus, { bar: string; dot: string; count: strin
   new: {
     bar: 'bg-blue-500',
     dot: 'bg-blue-500',
-    count: 'bg-blue-50 text-blue-700',
+    count: 'bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
     ring: 'ring-blue-400/60 bg-blue-50/40',
   },
   contacted: {
     bar: 'bg-amber-500',
     dot: 'bg-amber-500',
-    count: 'bg-amber-50 text-amber-700',
+    count: 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',
     ring: 'ring-amber-400/60 bg-amber-50/40',
   },
   negotiating: {
     bar: 'bg-violet-500',
     dot: 'bg-violet-500',
-    count: 'bg-violet-50 text-violet-700',
+    count: 'bg-violet-50 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300',
     ring: 'ring-violet-400/60 bg-violet-50/40',
   },
   won: {
     bar: 'bg-emerald-500',
     dot: 'bg-emerald-500',
-    count: 'bg-emerald-50 text-emerald-700',
+    count: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
     ring: 'ring-emerald-400/60 bg-emerald-50/40',
   },
   lost: {
@@ -65,7 +65,7 @@ const COLUMN_ACCENT: Record<LeadStatus, { bar: string; dot: string; count: strin
 
 type PipelineLead = Pick<
   Lead,
-  'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'folderId' | 'createdAt'
+  'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'folderId' | 'createdAt' | 'email' | 'emailStatus'
 >
 
 interface Props {
@@ -184,15 +184,15 @@ export function PipelineClient({ initialLeads, initialFolders }: Props) {
     // h-screen + min-h-0 acotan el alto real disponible: sin esto las columnas
     // crecen con su contenido y el tablero desborda la página verticalmente.
     <div className="flex h-screen flex-col overflow-hidden">
-      <header className="shrink-0 space-y-3 border-b border-gray-200 bg-white px-6 py-4">
+      <header className="shrink-0 space-y-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-900">Pipeline</h2>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <h2 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Pipeline</h2>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
               Arrastra los leads entre columnas para cambiar su estado
             </p>
           </div>
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium tabular-nums text-gray-600">
+          <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium tabular-nums text-gray-600 dark:text-gray-400">
             {isFiltered
               ? `${visibleLeads.length} de ${leads.length}`
               : `${leads.length} ${leads.length === 1 ? 'lead' : 'leads'}`}
@@ -210,12 +210,12 @@ export function PipelineClient({ initialLeads, initialFolders }: Props) {
           />
 
           {hasSubfolders && (
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:border-gray-400">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:border-gray-400">
               <input
                 type="checkbox"
                 checked={includeSub}
                 onChange={(e) => setIncludeSub(e.target.checked)}
-                className="cursor-pointer rounded border-gray-300"
+                className="cursor-pointer rounded border-gray-300 dark:border-gray-700"
               />
               Incluir subcarpetas
             </label>
@@ -227,13 +227,13 @@ export function PipelineClient({ initialLeads, initialFolders }: Props) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar en el tablero…"
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-8 text-sm outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 py-2 pl-9 pr-8 text-sm outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
             {q && (
               <button
                 type="button"
                 onClick={() => setQ('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
                 aria-label="Limpiar búsqueda"
               >
                 <X className="h-4 w-4" />
@@ -255,6 +255,8 @@ export function PipelineClient({ initialLeads, initialFolders }: Props) {
           )}
         </div>
       </header>
+
+      <PipelineSummary leads={visibleLeads} />
 
       <DndContext
         sensors={sensors}
@@ -283,6 +285,77 @@ export function PipelineClient({ initialLeads, initialFolders }: Props) {
   )
 }
 
+/**
+ * Resumen del embudo: cuánto pesa cada etapa y qué porcentaje llegó a cerrarse.
+ *
+ * La barra usa los mismos colores que las columnas, así se lee de un vistazo
+ * dónde se está atascando el trabajo sin tener que contar tarjetas.
+ */
+function PipelineSummary({ leads }: { leads: PipelineLead[] }) {
+  const total = leads.length
+  if (total === 0) return null
+
+  const byStatus = PIPELINE_COLUMNS.map((status) => ({
+    status,
+    count: leads.filter((l) => l.status === status).length,
+  }))
+  const won = leads.filter((l) => l.status === 'won').length
+  const lost = leads.filter((l) => l.status === 'lost').length
+  // Se mide sobre lo ya resuelto: los que siguen abiertos aún pueden cerrarse.
+  const closed = won + lost
+  const conversion = closed > 0 ? Math.round((won / closed) * 100) : null
+  const problems = leads.filter(
+    (l) => l.emailStatus === 'bounced' || l.emailStatus === 'complained',
+  ).length
+
+  return (
+    <div className="shrink-0 border-b border-gray-200 px-6 py-3 dark:border-gray-800">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-lg font-semibold text-gray-900 tabular-nums dark:text-gray-100">
+            {total}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {total === 1 ? 'lead' : 'leads'}
+          </span>
+        </div>
+
+        {conversion !== null && (
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+              {conversion}%
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              conversión ({won} de {closed} cerrados)
+            </span>
+          </div>
+        )}
+
+        {problems > 0 && (
+          <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <MailWarning className="h-3.5 w-3.5" />
+            {problems} con problemas de correo
+          </span>
+        )}
+
+        {/* Distribución proporcional del embudo. */}
+        <div className="ml-auto flex h-2 min-w-[12rem] flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+          {byStatus.map(({ status, count }) =>
+            count === 0 ? null : (
+              <div
+                key={status}
+                className={COLUMN_ACCENT[status].bar}
+                style={{ width: `${(count / total) * 100}%` }}
+                title={`${STATUS_LABELS[status]}: ${count}`}
+              />
+            ),
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function KanbanColumn({
   status,
   leads,
@@ -298,8 +371,8 @@ function KanbanColumn({
   return (
     // flex + min-h-0: la cabecera queda fija y solo la lista de tarjetas scrollea.
     <section
-      className={`flex h-full w-[19rem] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border bg-gray-50/80 transition-colors ${
-        isOver ? `border-transparent ring-2 ${accent.ring}` : 'border-gray-200'
+      className={`flex h-full w-[19rem] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border bg-gray-50/80 dark:bg-gray-900/60 transition-colors ${
+        isOver ? `border-transparent ring-2 ${accent.ring}` : 'border-gray-200 dark:border-gray-800'
       }`}
     >
       <div className={`h-1 shrink-0 ${accent.bar}`} />
@@ -307,7 +380,7 @@ function KanbanColumn({
       <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className={`h-2 w-2 rounded-full ${accent.dot}`} />
-          <h3 className="text-sm font-semibold text-gray-800">{STATUS_LABELS[status]}</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{STATUS_LABELS[status]}</h3>
         </div>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${accent.count}`}
@@ -325,7 +398,7 @@ function KanbanColumn({
             <KanbanCard key={lead.id} lead={lead} />
           ))}
           {leads.length === 0 && (
-            <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-gray-300 px-3 text-center text-xs text-gray-400">
+            <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-3 text-center text-xs text-gray-400">
               {isFiltered ? 'Sin resultados en este filtro' : 'Arrastra un lead aquí'}
             </div>
           )}
@@ -350,9 +423,9 @@ function KanbanCard({ lead, isDragging = false }: { lead: PipelineLead; isDraggi
     <article
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow ${
+      className={`group rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 shadow-sm transition-shadow ${
         isThisDragging ? 'opacity-40' : ''
-      } ${isDragging ? 'rotate-2 shadow-xl ring-1 ring-blue-400/40' : 'hover:border-gray-300 hover:shadow-md'}`}
+      } ${isDragging ? 'rotate-2 shadow-xl ring-1 ring-blue-400/40' : 'hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md'}`}
     >
       <div className="flex items-start justify-between gap-2">
         <Link
@@ -360,11 +433,11 @@ function KanbanCard({ lead, isDragging = false }: { lead: PipelineLead; isDraggi
           className="min-w-0 flex-1"
           onClick={(e) => isDragging && e.preventDefault()}
         >
-          <p className="truncate text-sm font-medium leading-tight text-gray-900 group-hover:text-blue-600">
+          <p className="truncate text-sm font-medium leading-tight text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
             {lead.name}
           </p>
           {lead.company && (
-            <p className="mt-0.5 truncate text-xs text-gray-500">{lead.company}</p>
+            <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{lead.company}</p>
           )}
         </Link>
         <button
@@ -372,7 +445,7 @@ function KanbanCard({ lead, isDragging = false }: { lead: PipelineLead; isDraggi
           aria-label="Reordenar lead"
           {...attributes}
           {...listeners}
-          className="-mr-1 shrink-0 cursor-grab rounded p-0.5 text-gray-300 opacity-0 transition-opacity hover:text-gray-500 focus-visible:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
+          className="-mr-1 shrink-0 cursor-grab rounded p-0.5 text-gray-300 dark:text-gray-600 opacity-0 transition-opacity hover:text-gray-500 focus-visible:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
         >
           <GripVertical className="h-4 w-4" />
         </button>
@@ -381,7 +454,7 @@ function KanbanCard({ lead, isDragging = false }: { lead: PipelineLead; isDraggi
       {/* Metadatos en una sola fila envolvente: mantiene la tarjeta compacta
           para que quepan más leads visibles por columna. */}
       {(lead.city || lead.phone || lead.rating != null) && (
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
           {lead.city && (
             <span className="inline-flex min-w-0 items-center gap-1">
               <MapPin className="h-3 w-3 shrink-0 text-gray-400" />
@@ -403,7 +476,22 @@ function KanbanCard({ lead, isDragging = false }: { lead: PipelineLead; isDraggi
         </div>
       )}
 
-      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-gray-100 pt-2">
+      {/* Un correo rebotado o marcado como spam bloquea futuros envíos: se avisa
+          en la propia tarjeta para no perder tiempo trabajando ese lead. */}
+      {(lead.emailStatus === 'bounced' || lead.emailStatus === 'complained') && (
+        <div
+          className={`mt-2 flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ${
+            lead.emailStatus === 'complained'
+              ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+              : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+          }`}
+        >
+          <MailWarning className="h-3 w-3 shrink-0" />
+          {lead.emailStatus === 'complained' ? 'Marcado como spam' : 'Correo rebotado'}
+        </div>
+      )}
+
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-800 pt-2">
         <SourceBadge source={lead.source as LeadSource} />
         {lead.category && (
           <span className="truncate text-xs text-gray-400" title={lead.category}>

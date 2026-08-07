@@ -42,25 +42,25 @@ export function FolderFormModal({ mode, folder, parentName, onSubmit, onClose }:
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {mode === 'create' ? 'Nueva carpeta' : 'Editar carpeta'}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {parentName && (
-            <p className="text-xs text-gray-500">
-              Dentro de <span className="font-medium text-gray-700">{parentName}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Dentro de <span className="font-medium text-gray-700 dark:text-gray-300">{parentName}</span>
             </p>
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Nombre</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Nombre</label>
             <div className="flex items-center gap-2">
               <FolderIcon className="w-5 h-5 shrink-0" style={{ color }} fill={color} />
               <input
@@ -74,7 +74,7 @@ export function FolderFormModal({ mode, folder, parentName, onSubmit, onClose }:
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Color</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Color</label>
             <div className="flex flex-wrap gap-2">
               {FOLDER_COLORS.map((c) => (
                 <button
@@ -97,7 +97,7 @@ export function FolderFormModal({ mode, folder, parentName, onSubmit, onClose }:
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>

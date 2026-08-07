@@ -68,7 +68,7 @@ export function ApifyUsage() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
         <Gauge className="w-4 h-4 text-gray-400" />
         Consumo de Apify no disponible
         <button onClick={() => load()} className="text-blue-600 hover:text-blue-700" title="Reintentar">
@@ -80,7 +80,7 @@ export function ApifyUsage() {
 
   if (loading && !usage) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
         Consultando créditos…
       </div>
@@ -99,14 +99,14 @@ export function ApifyUsage() {
     : null
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 min-w-[230px]">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2.5 min-w-[230px]">
       <div className="flex items-center gap-2 mb-1.5">
         <Gauge className="w-4 h-4 text-gray-400" />
-        <span className="text-xs font-medium text-gray-700">Créditos Apify</span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Créditos Apify</span>
         <button
           onClick={() => load()}
           disabled={loading}
-          className="ml-auto text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
           title="Actualizar"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -121,12 +121,12 @@ export function ApifyUsage() {
       </div>
 
       {usage.percent !== null && (
-        <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
           <div className={`h-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-1.5 text-[11px] text-gray-500">
+      <div className="flex items-center justify-between mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
         {usage.remainingUsd !== null && <span>Quedan ${usage.remainingUsd.toFixed(2)}</span>}
         {renews && <span>Renueva {renews}</span>}
       </div>

@@ -49,12 +49,12 @@ export function DeleteFoldersModal({ targets, folders, leads, onConfirm, onClose
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {many ? `Eliminar ${targets.length} carpetas` : 'Eliminar carpeta'}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -64,7 +64,7 @@ export function DeleteFoldersModal({ targets, folders, leads, onConfirm, onClose
             {targets.map((f) => (
               <span
                 key={f.id}
-                className="inline-flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 text-xs text-gray-700"
+                className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1 text-xs text-gray-700 dark:text-gray-300"
               >
                 <FolderIcon
                   className="w-3.5 h-3.5"
@@ -78,16 +78,16 @@ export function DeleteFoldersModal({ targets, folders, leads, onConfirm, onClose
 
           {hasContent ? (
             <>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {many ? 'Estas carpetas contienen' : 'Esta carpeta contiene'}{' '}
                 {leadCount > 0 && (
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
                     {leadCount} {leadCount === 1 ? 'lead' : 'leads'}
                   </span>
                 )}
                 {leadCount > 0 && subfolderCount > 0 && ' y '}
                 {subfolderCount > 0 && (
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
                     {subfolderCount} {subfolderCount === 1 ? 'subcarpeta' : 'subcarpetas'}
                   </span>
                 )}
@@ -116,7 +116,7 @@ export function DeleteFoldersModal({ targets, folders, leads, onConfirm, onClose
               </div>
             </>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {many
                 ? 'Estas carpetas están vacías. Se eliminarán definitivamente.'
                 : 'Esta carpeta está vacía. Se eliminará definitivamente.'}
@@ -138,7 +138,7 @@ export function DeleteFoldersModal({ targets, folders, leads, onConfirm, onClose
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -176,8 +176,8 @@ function ChoiceCard({
     ? tone === 'danger'
       ? 'border-red-400 bg-red-50'
       : 'border-blue-400 bg-blue-50'
-    : 'border-gray-200 hover:border-gray-300'
-  const iconColor = tone === 'danger' ? 'text-red-500' : 'text-gray-500'
+    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300'
+  const iconColor = tone === 'danger' ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
 
   return (
     <button
@@ -191,7 +191,7 @@ function ChoiceCard({
             ? tone === 'danger'
               ? 'border-red-500'
               : 'border-blue-500'
-            : 'border-gray-300'
+            : 'border-gray-300 dark:border-gray-700'
         }`}
       >
         {selected && (
@@ -201,11 +201,11 @@ function ChoiceCard({
         )}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
           <Icon className={`w-4 h-4 ${iconColor}`} />
           {title}
         </p>
-        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{desc}</p>
       </div>
     </button>
   )

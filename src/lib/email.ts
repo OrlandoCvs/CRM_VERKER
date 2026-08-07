@@ -189,3 +189,46 @@ export function textToHtml(text: string): string {
   const body = escaped.replace(/\r?\n/g, '<br>')
   return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1f2937;">${body}</div>`
 }
+
+/** Distingue el HTML del editor del texto plano de plantillas antiguas. */
+export function isHtmlBody(value: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(value)
+}
+
+/**
+ * Prepara el cuerpo para enviarlo por correo.
+ *
+ * El editor produce HTML, pero las plantillas creadas antes seguían siendo
+ * texto plano: se detecta y se convierte, de modo que ambas siguen funcionando.
+ * El HTML se envuelve con la tipografía base porque muchos clientes de correo
+ * ignoran las hojas de estilo y solo respetan los estilos en línea.
+ */
+export function bodyToHtml(body: string): string {
+  if (!isHtmlBody(body)) return textToHtml(body)
+  // La marca visual de las variables solo tiene sentido dentro del editor.
+  const clean = body.replace(/<span class="crm-var">([\s\S]*?)<\/span>/g, '$1')
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1f2937;">${clean}</div>`
+}
+
+/**
+ * Versión en texto plano del cuerpo, para clientes que no muestran HTML y para
+ * mejorar la puntuación antispam (un correo solo-HTML es más sospechoso).
+ */
+export function bodyToPlainText(body: string): string {
+  if (!isHtmlBody(body)) return body
+  return body
+    // Los saltos estructurales se conservan como saltos de línea.
+    .replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    // Compacta los huecos que dejan las etiquetas anidadas.
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}

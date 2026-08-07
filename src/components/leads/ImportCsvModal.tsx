@@ -219,14 +219,14 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <div className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Importar contactos desde CSV</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Importar contactos desde CSV</h3>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -249,11 +249,11 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                   const file = e.dataTransfer.files?.[0]
                   if (file) handleFile(file)
                 }}
-                className="border-2 border-dashed border-gray-300 rounded-xl py-12 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-12 text-center cursor-pointer hover:border-blue-400 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <FileText className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-700">
+                <FileText className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Arrastra tu archivo CSV aquí o haz clic para elegirlo
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
@@ -283,14 +283,14 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
           {/* STEP 2: mapear columnas + destino */}
           {step === 'map' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <FileText className="w-4 h-4 text-gray-400" />
-                <span className="font-medium text-gray-800">{fileName}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{fileName}</span>
                 <span className="text-gray-400">·</span>
                 <span>{rows.length} filas</span>
               </div>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Revisa qué columna de tu archivo corresponde a cada campo. El nombre es
                 obligatorio; el resto es opcional.
               </p>
@@ -298,17 +298,17 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
               <div className="space-y-2">
                 {IMPORTABLE_FIELDS.map((field) => (
                   <div key={field.key} className="flex items-center gap-3">
-                    <label className="w-28 shrink-0 text-sm text-gray-700">
+                    <label className="w-28 shrink-0 text-sm text-gray-700 dark:text-gray-300">
                       {field.label}
                       {field.required && <span className="text-red-500"> *</span>}
                     </label>
-                    <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
                     <select
                       value={mapping[field.key] ?? ''}
                       onChange={(e) =>
                         setFieldColumn(field.key, e.target.value === '' ? null : Number(e.target.value))
                       }
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">— Sin asignar —</option>
                       {headers.map((h, i) => (
@@ -322,12 +322,12 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
               </div>
 
               {/* Destino de los leads (obligatorio) */}
-              <div className="rounded-lg border border-gray-200 p-3 space-y-2.5">
-                <p className="text-sm font-medium text-gray-800">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-2.5">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   Destino de los leads <span className="text-red-500">*</span>
                 </p>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <input
                     type="radio"
                     name="destination"
@@ -341,11 +341,11 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                     value={newFolderName}
                     onFocus={() => setDestination('new')}
                     onChange={(e) => setNewFolderName(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </label>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <input
                     type="radio"
                     name="destination"
@@ -360,7 +360,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                       setExistingFolderId(e.target.value)
                       setDestination('existing')
                     }}
-                    className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">— Elegir carpeta —</option>
                     {folderOptions.map((f) => (
@@ -369,7 +369,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                   </select>
                 </label>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <input
                     type="radio"
                     name="destination"
@@ -383,15 +383,15 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
               {/* Vista previa de las primeras filas mapeadas */}
               {mapping.name !== undefined && (
                 <div className="mt-4">
-                  <p className="text-xs font-medium text-gray-600 mb-1.5">Vista previa (primeras 3):</p>
-                  <div className="rounded-lg border border-gray-200 overflow-hidden text-xs">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Vista previa (primeras 3):</p>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden text-xs">
                     {rows.slice(0, 3).map((row, i) => (
-                      <div key={i} className="flex gap-3 px-3 py-1.5 border-b border-gray-100 last:border-0">
-                        <span className="font-medium text-gray-800">
+                      <div key={i} className="flex gap-3 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
                           {row[mapping.name!]?.trim() || '(sin nombre)'}
                         </span>
                         {mapping.email !== undefined && row[mapping.email]?.trim() && (
-                          <span className="text-gray-500">{row[mapping.email].trim()}</span>
+                          <span className="text-gray-500 dark:text-gray-400">{row[mapping.email].trim()}</span>
                         )}
                         {mapping.phone !== undefined && row[mapping.phone]?.trim() && (
                           <span className="text-gray-400">{row[mapping.phone].trim()}</span>
@@ -408,10 +408,10 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
           {step === 'importing' && (
             <div className="py-8 text-center">
               <Loader2 className="w-8 h-8 mx-auto text-blue-600 animate-spin mb-4" />
-              <p className="text-sm font-medium text-gray-800 mb-3">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
                 Importando {progress} de {total}…
               </p>
-              <div className="h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
+              <div className="h-2.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                 <div
                   className="h-full bg-blue-600 transition-all duration-200"
                   style={{ width: `${pct}%` }}
@@ -419,7 +419,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
               </div>
               <p className="text-xs text-gray-400 mt-2">{pct}%</p>
               {totals && (
-                <p className="text-xs text-gray-500 mt-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                   {totals.created} nuevos · {totals.duplicates} duplicados
                 </p>
               )}
@@ -430,11 +430,11 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
           {step === 'done' && totals && (
             <div className="text-center py-6">
               <CheckCircle2 className="w-12 h-12 mx-auto text-green-500 mb-3" />
-              <h4 className="font-semibold text-gray-900 mb-1">Importación completada</h4>
-              <div className="text-sm text-gray-600 space-y-0.5 mt-3">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Importación completada</h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5 mt-3">
                 <p><span className="font-semibold text-green-600">{totals.created}</span> contactos nuevos importados</p>
                 {totals.duplicates > 0 && (
-                  <p><span className="font-medium text-gray-500">{totals.duplicates}</span> ya existían (omitidos)</p>
+                  <p><span className="font-medium text-gray-500 dark:text-gray-400">{totals.duplicates}</span> ya existían (omitidos)</p>
                 )}
                 {totals.errors.length > 0 && (
                   <p><span className="font-medium text-red-600">{totals.errors.length}</span> con avisos o errores</p>
@@ -447,8 +447,8 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                     {totals.errors.slice(0, 50).map((e, i) => (
                       <div key={i} className="flex gap-2 px-3 py-1.5 border-b border-amber-100 last:border-0">
                         <span className="text-amber-700 shrink-0">Fila {e.row}</span>
-                        <span className="font-medium text-gray-700 truncate">{e.name}</span>
-                        <span className="text-gray-500 ml-auto shrink-0">{e.reason}</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{e.name}</span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-auto shrink-0">{e.reason}</span>
                       </div>
                     ))}
                     {totals.errors.length > 50 && (
@@ -471,12 +471,12 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+        <div className="flex justify-end gap-2 border-t border-gray-100 dark:border-gray-800 px-5 py-4">
           {step === 'map' && (
             <>
               <button
                 onClick={() => { setStep('upload'); setError(null) }}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
               >
                 Atrás
               </button>

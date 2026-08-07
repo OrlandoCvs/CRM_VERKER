@@ -44,16 +44,16 @@ function LoginForm() {
             <Mail className="h-6 w-6 text-white" />
           </div>
           <div className="text-center">
-            <h1 className="text-lg font-semibold tracking-tight text-gray-900">Verker CRM</h1>
-            <p className="mt-0.5 text-sm text-gray-500">Introduce la contraseña para acceder</p>
+            <h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">Verker CRM</h1>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Introduce la contraseña para acceder</p>
           </div>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm"
         >
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">Contraseña</label>
+          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Contraseña</label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -62,7 +62,7 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               autoFocus
               placeholder="••••••••"
-              className="w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 

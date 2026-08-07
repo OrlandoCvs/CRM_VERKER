@@ -1,10 +1,12 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   Mail, Plus, Edit, Trash2, X, Loader2, AlertTriangle, Check, FileText,
-  Paperclip, Upload, File as FileIcon,
+  Paperclip, Upload, File as FileIcon, Search, Copy, Eye,
 } from 'lucide-react'
+import { RichTextEditor, ensureHtml } from '@/components/email/RichTextEditor'
+import { AttachmentPreview } from '@/components/email/AttachmentPreview'
 
 const VARIABLES = [
   { key: 'name', label: 'Nombre' },
@@ -53,14 +55,57 @@ interface Props {
   status: EmailStatus
 }
 
+/** Quita las etiquetas HTML para mostrar un resumen legible en la tarjeta. */
+function toSnippet(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6])>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function TemplatesClient({ initialTemplates, status }: Props) {
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates)
   const [editing, setEditing] = useState<EmailTemplate | 'new' | null>(null)
+  const [preview, setPreview] = useState<EmailTemplate | null>(null)
+  const [query, setQuery] = useState('')
+  const [duplicating, setDuplicating] = useState<string | null>(null)
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return templates
+    return templates.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.subject.toLowerCase().includes(q) ||
+        toSnippet(t.body).toLowerCase().includes(q),
+    )
+  }, [templates, query])
 
   async function handleDelete(id: string) {
     if (!confirm('¿Eliminar esta plantilla?')) return
     await fetch(`/api/email/templates/${id}`, { method: 'DELETE' })
     setTemplates((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  /** Crea una copia de la plantilla para partir de ella sin tocar la original. */
+  async function handleDuplicate(t: EmailTemplate) {
+    setDuplicating(t.id)
+    try {
+      const res = await fetch('/api/email/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: `${t.name} (copia)`, subject: t.subject, body: t.body }),
+      })
+      if (!res.ok) return
+      const created = await res.json()
+      setTemplates((prev) => [created, ...prev])
+    } finally {
+      setDuplicating(null)
+    }
   }
 
   function handleSaved(tpl: EmailTemplate) {
@@ -73,12 +118,12 @@ export function TemplatesClient({ initialTemplates, status }: Props) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Plantillas de Correo</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Plantillas de Correo</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
             Crea plantillas reutilizables para tus campañas. Usa variables como{' '}
-            <code className="font-mono text-xs bg-gray-100 px-1 py-0.5 rounded">{'{{name}}'}</code>{' '}
+            <code className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">{'{{name}}'}</code>{' '}
             que se reemplazan con los datos de cada lead.
           </p>
         </div>
@@ -91,7 +136,7 @@ export function TemplatesClient({ initialTemplates, status }: Props) {
       </div>
 
       {!status.configured && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800">
+        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 text-amber-800 dark:text-amber-300">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-medium">Email aún no configurado</p>
@@ -104,56 +149,96 @@ export function TemplatesClient({ initialTemplates, status }: Props) {
         </div>
       )}
       {status.configured && (
-        <p className="text-xs text-gray-400 flex items-center gap-1.5">
+        <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
           <Check className="w-3.5 h-3.5 text-emerald-500" />
-          Envío configurado: <span className="font-medium text-gray-600">{status.from}</span> vía{' '}
+          Envío configurado: <span className="font-medium text-gray-600 dark:text-gray-400 dark:text-gray-300">{status.from}</span> vía{' '}
           {status.provider?.toUpperCase()}
         </p>
       )}
 
+      {templates.length > 3 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar plantilla…"
+            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+          />
+        </div>
+      )}
+
       {templates.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-          <FileText className="w-8 h-8 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500 text-sm">Aún no tienes plantillas</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 py-16 text-center">
+          <FileText className="w-8 h-8 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Aún no tienes plantillas</p>
           <button
             onClick={() => setEditing('new')}
-            className="mt-3 text-sm text-blue-600 hover:underline"
+            className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
             Crear la primera →
           </button>
         </div>
+      ) : visible.length === 0 ? (
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+          Ninguna plantilla coincide con «{query}».
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {templates.map((t) => (
-            <div key={t.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+          {visible.map((t) => (
+            <div
+              key={t.id}
+              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 flex flex-col gap-2 hover:shadow-md dark:hover:border-gray-700 transition-all"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                     <Mail className="w-4 h-4" />
                   </span>
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">{t.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{t.name}</h3>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => setPreview(t)}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+                    aria-label="Previsualizar"
+                    title="Previsualizar"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDuplicate(t)}
+                    disabled={duplicating === t.id}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50"
+                    aria-label="Duplicar"
+                    title="Duplicar"
+                  >
+                    {duplicating === t.id
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                   <button
                     onClick={() => setEditing(t)}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/15 rounded transition-colors"
                     aria-label="Editar"
+                    title="Editar"
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(t.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/15 rounded transition-colors"
                     aria-label="Eliminar"
+                    title="Eliminar"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
-              <p className="text-xs font-medium text-gray-700 truncate">{t.subject}</p>
-              <p className="text-xs text-gray-500 line-clamp-3 whitespace-pre-wrap">{t.body}</p>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{t.subject}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{toSnippet(t.body)}</p>
               {t.attachments && t.attachments.length > 0 && (
-                <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                   <Paperclip className="h-3.5 w-3.5" />
                   {t.attachments.length}{' '}
                   {t.attachments.length === 1 ? 'adjunto' : 'adjuntos'}
@@ -171,6 +256,84 @@ export function TemplatesClient({ initialTemplates, status }: Props) {
           onClose={() => setEditing(null)}
         />
       )}
+
+      {preview && <TemplatePreviewModal template={preview} onClose={() => setPreview(null)} />}
+    </div>
+  )
+}
+
+/** Datos de ejemplo para ver la plantilla ya resuelta, sin depender de un lead real. */
+const SAMPLE_LEAD: Record<string, string> = {
+  name: 'Inmobiliaria Sol Naciente',
+  company: 'Sol Naciente SA de CV',
+  city: 'Monterrey',
+  country: 'México',
+  category: 'Inmobiliaria',
+  phone: '81 1234 5678',
+  email: 'contacto@solnaciente.mx',
+  website: 'solnaciente.mx',
+  address: 'Av. Constitución 100',
+}
+
+function fillSample(text: string): string {
+  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, key: string) => SAMPLE_LEAD[key] ?? '')
+}
+
+/** Muestra la plantilla tal como la recibiría un destinatario. */
+function TemplatePreviewModal({
+  template,
+  onClose,
+}: {
+  template: EmailTemplate
+  onClose: () => void
+}) {
+  // El contenido viene del propio usuario (lo escribió en el editor), no de
+  // terceros, y se muestra igual que se enviará.
+  const html = fillSample(ensureHtml(template.body))
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Vista previa</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Con datos de ejemplo: {SAMPLE_LEAD.name}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-6 space-y-4">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 dark:bg-gray-800/50 px-4 py-2.5">
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Asunto</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {fillSample(template.subject)}
+              </p>
+            </div>
+            <div
+              className="rich-editor p-4 text-sm text-gray-800 dark:text-gray-200"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
+
+          {template.attachments && template.attachments.length > 0 && (
+            <AttachmentPreview attachments={template.attachments} />
+          )}
+        </div>
+
+        <div className="flex justify-end border-t border-gray-100 dark:border-gray-800 px-6 py-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 dark:hover:text-white border border-gray-200 dark:border-gray-800 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -186,7 +349,9 @@ function TemplateFormModal({
 }) {
   const [name, setName] = useState(template?.name ?? '')
   const [subject, setSubject] = useState(template?.subject ?? '')
-  const [body, setBody] = useState(template?.body ?? '')
+  // Las plantillas guardadas antes del editor son texto plano: se convierten a
+  // HTML al abrirlas para no perder los saltos de línea.
+  const [body, setBody] = useState(ensureHtml(template?.body ?? ''))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<TemplateAttachment[]>(
@@ -195,7 +360,10 @@ function TemplateFormModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !subject.trim() || !body.trim()) {
+    // Un editor "vacío" puede contener <br> o <div></div>: para saber si el
+    // usuario escribió algo hay que mirar el texto, no el HTML.
+    const hasText = toSnippet(body).length > 0
+    if (!name.trim() || !subject.trim() || !hasText) {
       setError('Todos los campos son obligatorios')
       return
     }
@@ -226,60 +394,50 @@ function TemplateFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {template ? 'Editar plantilla' : 'Nueva plantilla'}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Nombre de la plantilla</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              Nombre de la plantilla
+            </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Presentación de servicios"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Variables disponibles</label>
-            <div className="flex flex-wrap gap-1.5">
-              {VARIABLES.map((v) => (
-                <span
-                  key={v.key}
-                  className="px-2.5 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-600"
-                  title={v.label}
-                >
-                  {`{{${v.key}}}`}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Asunto</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Asunto</label>
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Hola {{name}}, propuesta para {{company}}"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">
+              También admite variables: {'{{name}}'}, {'{{company}}'}…
+            </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Mensaje</label>
-            <textarea
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Mensaje</label>
+            <RichTextEditor
               value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={10}
-              placeholder={'Hola {{name}},\n\nMe puse en contacto porque...'}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+              onChange={setBody}
+              variables={VARIABLES}
+              placeholder="Hola {{name}}, me puse en contacto porque…"
+              minHeight={260}
             />
           </div>
 
@@ -299,7 +457,7 @@ function TemplateFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -373,8 +531,8 @@ function AttachmentsSection({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+    <div className="flex flex-col gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-3">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400">
         <Paperclip className="h-3.5 w-3.5" />
         Archivos adjuntos
         <span className="font-normal text-gray-400">— se envían con cada correo de esta plantilla</span>
@@ -395,11 +553,11 @@ function AttachmentsSection({
                 return (
                   <li
                     key={a.id}
-                    className="overflow-hidden rounded-md border border-gray-200 bg-white text-sm"
+                    className="overflow-hidden rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm"
                   >
                     <div className="flex items-center gap-2 px-2.5 py-1.5">
                       <FileIcon className="h-4 w-4 shrink-0 text-blue-500" />
-                      <span className="min-w-0 flex-1 truncate text-gray-700">{a.filename}</span>
+                      <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{a.filename}</span>
                       <span className="shrink-0 text-xs text-gray-400">{formatSize(a.size)}</span>
                       {viewable && (
                         <button
@@ -413,14 +571,14 @@ function AttachmentsSection({
                       <button
                         type="button"
                         onClick={() => handleRemove(a.id)}
-                        className="shrink-0 rounded p-0.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                        className="shrink-0 rounded p-0.5 text-gray-300 dark:text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
                         aria-label={`Quitar ${a.filename}`}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {open && viewable && (
-                      <div className="border-t border-gray-200 bg-gray-100">
+                      <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800">
                         {a.mimeType === 'application/pdf' ? (
                           <object
                             data={`/api/email/attachments/${a.id}#toolbar=0&navpanes=0`}
@@ -428,7 +586,7 @@ function AttachmentsSection({
                             className="h-[380px] w-full"
                             aria-label={`Vista previa de ${a.filename}`}
                           >
-                            <div className="p-4 text-center text-xs text-gray-500">
+                            <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
                               Tu navegador no puede mostrar el PDF aquí.{' '}
                               <a
                                 href={`/api/email/attachments/${a.id}`}
@@ -468,7 +626,7 @@ function AttachmentsSection({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 bg-white py-2 text-sm text-gray-600 transition-colors hover:border-blue-400 hover:text-blue-600 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 text-sm text-gray-600 dark:text-gray-400 transition-colors hover:border-blue-400 hover:text-blue-600 disabled:opacity-50"
           >
             {uploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

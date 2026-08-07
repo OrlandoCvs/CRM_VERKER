@@ -6,7 +6,7 @@ import { Lead, Folder } from '@/types'
 
 type PipelineLead = Pick<
   Lead,
-  'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'folderId' | 'createdAt'
+  'id' | 'name' | 'company' | 'status' | 'source' | 'city' | 'rating' | 'phone' | 'category' | 'folderId' | 'createdAt' | 'email' | 'emailStatus'
 >
 
 export default async function PipelinePage() {
@@ -17,6 +17,7 @@ export default async function PipelinePage() {
         id: true, name: true, company: true, status: true, source: true,
         city: true, rating: true, phone: true, category: true,
         folderId: true, createdAt: true, updatedAt: true,
+        email: true, emailStatus: true,
       },
     }),
     prisma.folder.findMany({ orderBy: { name: 'asc' } }),
@@ -26,7 +27,7 @@ export default async function PipelinePage() {
     id: string; name: string; company: string | null; status: string
     source: string; city: string | null; rating: number | null
     phone: string | null; category: string | null; folderId: string | null
-    createdAt: Date
+    createdAt: Date; email: string | null; emailStatus: string | null
   }>
 
   const leads: PipelineLead[] = raw.map((l) => ({

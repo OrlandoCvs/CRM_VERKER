@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LogOut,
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -105,6 +106,12 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-gray-800 px-3 py-4">
+        <div className="mb-3">
+          <p className="mb-1.5 px-1 text-[11px] font-medium uppercase tracking-wider text-gray-500">
+            Tema
+          </p>
+          <ThemeToggle />
+        </div>
         {authEnabled && (
           <button
             onClick={logout}

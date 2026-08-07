@@ -88,10 +88,10 @@ export function MoveToFolderModal({
               ? 'opacity-40 cursor-not-allowed'
               : selected
                 ? 'bg-blue-50 text-blue-700'
-                : 'hover:bg-gray-50 text-gray-700'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
           }`}
         >
-          {node.depth > 0 && <CornerDownRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+          {node.depth > 0 && <CornerDownRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 shrink-0" />}
           <FolderIcon
             className="w-4 h-4 shrink-0"
             style={{ color: node.color ?? DEFAULT_FOLDER_COLOR }}
@@ -110,13 +110,13 @@ export function MoveToFolderModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+            {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -126,7 +126,7 @@ export function MoveToFolderModal({
             type="button"
             onClick={() => setTarget(null)}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-              target === null ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
+              target === null ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
             }`}
           >
             <FolderInput className="w-4 h-4 shrink-0 text-gray-400" />
@@ -134,16 +134,16 @@ export function MoveToFolderModal({
             {target === null && <Check className="w-4 h-4 shrink-0" />}
           </button>
 
-          {tree.length > 0 && <div className="my-1 border-t border-gray-100" />}
+          {tree.length > 0 && <div className="my-1 border-t border-gray-100 dark:border-gray-800" />}
           {tree.map(renderNode)}
         </div>
 
-        <div className="border-t border-gray-100 p-4 space-y-3">
+        <div className="border-t border-gray-100 dark:border-gray-800 p-4 space-y-3">
           {showCreate ? (
-            <div className="space-y-2.5 bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-500">
+            <div className="space-y-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Nueva carpeta dentro de{' '}
-                <span className="font-medium text-gray-700">{targetName}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300">{targetName}</span>
               </p>
               <input
                 autoFocus
@@ -179,7 +179,7 @@ export function MoveToFolderModal({
                 <button
                   type="button"
                   onClick={() => { setShowCreate(false); setError('') }}
-                  className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100"
+                  className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Cancelar
                 </button>
@@ -199,14 +199,14 @@ export function MoveToFolderModal({
           {error && <p className="text-xs text-red-500">{error}</p>}
 
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-gray-500 truncate">
-              Destino: <span className="font-medium text-gray-700">{targetName}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              Destino: <span className="font-medium text-gray-700 dark:text-gray-300">{targetName}</span>
             </p>
             <div className="flex gap-2 shrink-0">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancelar
               </button>

@@ -73,8 +73,8 @@ export function LeafletMap({ leads, selectedId, onSelect }: Props) {
           >
             <Popup>
               <div className="min-w-[180px]">
-                <p className="font-bold text-sm text-gray-900 mb-1">{lead.name}</p>
-                {lead.category && <p className="text-xs text-gray-500 mb-1">{lead.category}</p>}
+                <p className="font-bold text-sm text-gray-900 dark:text-gray-100 mb-1">{lead.name}</p>
+                {lead.category && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{lead.category}</p>}
                 <div className="flex items-center gap-2 mb-2">
                   <span
                     className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
@@ -83,10 +83,10 @@ export function LeafletMap({ leads, selectedId, onSelect }: Props) {
                     {STATUS_LABELS[lead.status as LeadStatus] ?? lead.status}
                   </span>
                   {lead.rating != null && (
-                    <span className="text-xs text-gray-600">⭐ {lead.rating.toFixed(1)}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">⭐ {lead.rating.toFixed(1)}</span>
                   )}
                 </div>
-                {lead.city && <p className="text-xs text-gray-500 mb-2">📍 {lead.city}</p>}
+                {lead.city && <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">📍 {lead.city}</p>}
                 {lead.phone && (
                   <a href={`tel:${lead.phone}`} className="block text-xs text-blue-600 mb-2 hover:underline">
                     📞 {lead.phone}

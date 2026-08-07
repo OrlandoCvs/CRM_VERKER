@@ -28,7 +28,7 @@ function dueMeta(dueAt: string, done: boolean): { label: string; tone: string } 
   if (diffMs < 0) return { label: `Vencido · ${fmt}`, tone: 'text-red-600' }
   if (diffMs < dayMs) return { label: `Hoy · ${fmt}`, tone: 'text-amber-600' }
   if (diffMs < 2 * dayMs) return { label: `Mañana · ${fmt}`, tone: 'text-blue-600' }
-  return { label: fmt, tone: 'text-gray-500' }
+  return { label: fmt, tone: 'text-gray-500 dark:text-gray-400' }
 }
 
 export function RemindersSection({ leadId }: { leadId: string }) {
@@ -102,10 +102,10 @@ export function RemindersSection({ leadId }: { leadId: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
       <div className="mb-4 flex items-center gap-2">
-        <Bell className="h-4 w-4 text-gray-500" />
-        <h4 className="font-semibold text-gray-900">Seguimiento</h4>
+        <Bell className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+        <h4 className="font-semibold text-gray-900 dark:text-gray-100">Seguimiento</h4>
         {pending.length > 0 && (
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
             {pending.length} pendiente{pending.length === 1 ? '' : 's'}
@@ -120,13 +120,13 @@ export function RemindersSection({ leadId }: { leadId: string }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Ej: Volver a llamar, enviar propuesta…"
           onKeyDown={(e) => e.key === 'Enter' && add()}
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="datetime-local"
           value={dueAt}
           onChange={(e) => setDueAt(e.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           onClick={add}
@@ -141,7 +141,7 @@ export function RemindersSection({ leadId }: { leadId: string }) {
         <p className="py-4 text-center text-sm text-gray-400">Cargando…</p>
       ) : reminders.length === 0 ? (
         <div className="py-6 text-center">
-          <AlarmClock className="mx-auto mb-1.5 h-6 w-6 text-gray-200" />
+          <AlarmClock className="mx-auto mb-1.5 h-6 w-6 text-gray-200 dark:text-gray-700" />
           <p className="text-sm text-gray-400">Sin recordatorios. Agenda un seguimiento.</p>
         </div>
       ) : (
@@ -172,13 +172,13 @@ function ReminderRow({
 }) {
   const meta = dueMeta(reminder.dueAt, reminder.done)
   return (
-    <div className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-gray-50">
+    <div className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800">
       <button
         onClick={() => onToggle(reminder)}
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
           reminder.done
             ? 'border-emerald-500 bg-emerald-500 text-white'
-            : 'border-gray-300 hover:border-emerald-400'
+            : 'border-gray-300 dark:border-gray-700 hover:border-emerald-400'
         }`}
         aria-label={reminder.done ? 'Marcar como pendiente' : 'Marcar como hecho'}
       >
@@ -186,7 +186,7 @@ function ReminderRow({
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm ${reminder.done ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+        <p className={`truncate text-sm ${reminder.done ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-200'}`}>
           {reminder.title}
         </p>
         <p className={`text-xs ${meta.tone}`}>{meta.label}</p>
@@ -194,7 +194,7 @@ function ReminderRow({
 
       <button
         onClick={() => onRemove(reminder.id)}
-        className="shrink-0 rounded p-1 text-gray-300 opacity-0 transition-colors hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+        className="shrink-0 rounded p-1 text-gray-300 dark:text-gray-600 opacity-0 transition-colors hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
         aria-label="Eliminar recordatorio"
       >
         <Trash2 className="h-3.5 w-3.5" />

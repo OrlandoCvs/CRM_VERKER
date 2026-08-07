@@ -164,8 +164,8 @@ export function DashboardClient({ leads, folders }: Props) {
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-gray-900">Dashboard</h2>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h2 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Dashboard</h2>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             {folder === FOLDER_ALL
               ? 'Resumen general de tu CRM'
               : 'Resumen de la carpeta seleccionada'}
@@ -181,12 +181,12 @@ export function DashboardClient({ leads, folders }: Props) {
             noneCount={noneCount}
           />
           {hasSubfolders && (
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:border-gray-400">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:border-gray-400">
               <input
                 type="checkbox"
                 checked={includeSub}
                 onChange={(e) => setIncludeSub(e.target.checked)}
-                className="cursor-pointer rounded border-gray-300"
+                className="cursor-pointer rounded border-gray-300 dark:border-gray-700"
               />
               Incluir subcarpetas
             </label>
@@ -227,8 +227,8 @@ export function DashboardClient({ leads, folders }: Props) {
 
       {/* Charts */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="mb-4 text-sm font-semibold text-gray-900">Leads por Estado</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+          <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Leads por Estado</h3>
           {statusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -257,20 +257,20 @@ export function DashboardClient({ leads, folders }: Props) {
           {/* La leyenda lleva el valor: la identidad nunca depende solo del color. */}
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
             {statusData.map((s) => (
-              <div key={s.key} className="flex items-center gap-1.5 text-xs text-gray-600">
+              <div key={s.key} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: STATUS_PIE_COLORS[s.key] ?? '#94a3b8' }}
                 />
                 <span>{s.name}</span>
-                <span className="font-medium tabular-nums text-gray-900">{s.value}</span>
+                <span className="font-medium tabular-nums text-gray-900 dark:text-gray-100">{s.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="mb-4 text-sm font-semibold text-gray-900">Leads por Fuente</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+          <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Leads por Fuente</h3>
           {sourceData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={sourceData} barSize={40} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -298,9 +298,9 @@ export function DashboardClient({ leads, folders }: Props) {
       </div>
 
       {/* Recent Leads */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <h3 className="text-sm font-semibold text-gray-900">Leads Recientes</h3>
+      <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Leads Recientes</h3>
           <Link
             href="/leads"
             className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
@@ -323,12 +323,12 @@ export function DashboardClient({ leads, folders }: Props) {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {recentLeads.map((lead) => (
               <Link
                 key={lead.id}
                 href={`/leads/${lead.id}`}
-                className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-gray-50"
+                className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 ring-1 ring-inset ring-blue-100">
                   <span className="text-sm font-semibold text-blue-600">
@@ -336,10 +336,10 @@ export function DashboardClient({ leads, folders }: Props) {
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900 group-hover:text-blue-600">
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600">
                     {lead.name}
                   </p>
-                  <p className="truncate text-xs text-gray-500">
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                     {lead.company ?? lead.city ?? '—'}
                   </p>
                 </div>
@@ -370,8 +370,8 @@ function ConversionPanel({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <h3 className="mb-4 text-sm font-semibold text-gray-900">Conversión</h3>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+      <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Conversión</h3>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Metric
@@ -402,19 +402,19 @@ function ConversionPanel({
 
       {/* Conversión por fuente */}
       {bySource.length > 0 && (
-        <div className="mt-5 border-t border-gray-100 pt-4">
-          <p className="mb-3 text-xs font-medium text-gray-500">Conversión por fuente</p>
+        <div className="mt-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p className="mb-3 text-xs font-medium text-gray-500 dark:text-gray-400">Conversión por fuente</p>
           <div className="space-y-2.5">
             {bySource.map((s) => (
               <div key={s.name} className="flex items-center gap-3">
-                <span className="w-28 shrink-0 truncate text-xs text-gray-600">{s.name}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                <span className="w-28 shrink-0 truncate text-xs text-gray-600 dark:text-gray-400">{s.name}</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                   <div
                     className="h-full rounded-full bg-emerald-500 transition-all"
                     style={{ width: `${s.rate}%` }}
                   />
                 </div>
-                <span className="w-24 shrink-0 text-right text-xs text-gray-500 tabular-nums">
+                <span className="w-24 shrink-0 text-right text-xs text-gray-500 dark:text-gray-400 tabular-nums">
                   {s.rate}% · {s.won}/{s.total}
                 </span>
               </div>
@@ -446,7 +446,7 @@ function Metric({
   return (
     <div>
       <p className={`text-2xl font-semibold tabular-nums tracking-tight ${toneCls[tone]}`}>{value}</p>
-      <p className="mt-0.5 text-xs font-medium text-gray-700">{label}</p>
+      <p className="mt-0.5 text-xs font-medium text-gray-700 dark:text-gray-300">{label}</p>
       <p className="text-[11px] text-gray-400">{hint}</p>
     </div>
   )
@@ -470,16 +470,16 @@ function StatCard({
     orange: 'bg-orange-50 text-orange-600 ring-orange-100',
   }
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 transition-shadow hover:shadow-sm">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 transition-shadow hover:shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm text-gray-500">{label}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
         <span
           className={`flex h-8 w-8 items-center justify-center rounded-lg ring-1 ring-inset ${colorMap[color]}`}
         >
           {icon}
         </span>
       </div>
-      <p className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900">{value}</p>
+      <p className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-gray-100">{value}</p>
     </div>
   )
 }
