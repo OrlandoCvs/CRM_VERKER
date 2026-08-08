@@ -190,9 +190,15 @@ export function textToHtml(text: string): string {
   return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1f2937;">${body}</div>`
 }
 
-/** Distingue el HTML del editor del texto plano de plantillas antiguas. */
+/**
+ * Distingue el HTML del editor del texto plano de plantillas antiguas.
+ *
+ * También cuentan las entidades (`&nbsp;`, `&amp;`…): el editor las genera al
+ * teclear espacios, y un cuerpo con entidades pero sin etiquetas se escaparía
+ * por error, haciendo que el destinatario viera el código en vez del texto.
+ */
 export function isHtmlBody(value: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(value)
+  return /<[a-z][\s\S]*>/i.test(value) || /&(?:[a-z]+|#\d+);/i.test(value)
 }
 
 /**

@@ -31,9 +31,57 @@ interface Props {
   minHeight?: number
 }
 
-/** Detecta si una cadena ya es HTML o es texto plano heredado. */
+/**
+ * Detecta si una cadena ya es HTML o es texto plano heredado.
+ *
+ * Además de las etiquetas hay que reconocer las entidades: al pulsar espacio el
+ * navegador escribe `&nbsp;`, y un texto así no lleva ninguna etiqueta. Sin
+ * esta comprobación se tomaría por texto plano y se escaparía el `&`.
+ */
 export function looksLikeHtml(value: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(value)
+  return /<[a-z][\s\S]*>/i.test(value) || /&(?:[a-z]+|#\d+);/i.test(value)
+}
+
+/**
+ * Convierte las marcas `<font size="7">` que deja `execCommand('fontSize')` en
+ * spans con un tamaño exacto en píxeles.
+ *
+ * Al cambiar el tamaño de un texto que ya lo tenía, el navegador envuelve el
+ * span anterior dentro del nuevo; como en CSS gana el más interno, hay que
+ * limpiar el `font-size` de los descendientes o el cambio no se vería.
+ *
+ * Devuelve los spans creados para poder volver a seleccionarlos: sin eso el
+ * rango guardado apuntaría a nodos ya destruidos y la barra dejaría de
+ * responder a partir del segundo cambio.
+ */
+export function replaceFontMarkers(editor: HTMLElement, px: number): HTMLElement[] {
+  const created: HTMLElement[] = []
+
+  editor.querySelectorAll('font[size="7"]').forEach((node) => {
+    const span = document.createElement('span')
+    span.style.fontSize = `${px}px`
+    // Mueve los nodos en vez de copiar el HTML: conserva la estructura interna.
+    while (node.firstChild) span.appendChild(node.firstChild)
+    node.replaceWith(span)
+    created.push(span)
+  })
+
+  // El tamaño heredado de una aplicación anterior tiene que desaparecer.
+  for (const span of created) {
+    span.querySelectorAll<HTMLElement>('[style*="font-size"]').forEach((child) => {
+      child.style.removeProperty('font-size')
+      // Un span que solo existía para fijar el tamaño ya no aporta nada.
+      if (child.tagName === 'SPAN' && child.getAttribute('style') === '') {
+        child.replaceWith(...Array.from(child.childNodes))
+      }
+    })
+    // Las <font size> anidadas de versiones previas también estorban.
+    span.querySelectorAll('font[size]').forEach((child) => {
+      child.replaceWith(...Array.from(child.childNodes))
+    })
+  }
+
+  return created
 }
 
 /**
@@ -92,18 +140,37 @@ export function RichTextEditor({
   // La selección se pierde al pulsar un botón: se guarda antes de abrir menús.
   const savedRange = useRef<Range | null>(null)
 
+  // Último HTML que emitió este editor. Sirve para distinguir el valor que
+  // vuelve del propio componente de uno que llega de fuera.
+  const lastEmitted = useRef<string | null>(null)
+
   // Vuelca el valor recibido solo cuando difiere del DOM: escribirlo en cada
   // tecleo movería el cursor al principio en cada pulsación.
+  //
+  // Depende también de `showSource` porque al alternar con la vista de HTML el
+  // <div> se desmonta y vuelve a montarse vacío: sin esto, volver al editor
+  // mostraría el mensaje en blanco aunque el contenido siguiera guardado.
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const html = ensureHtml(value)
+    // `ensureHtml` solo debe tocar lo que viene de fuera (una plantilla antigua
+    // guardada como texto plano). Lo que emitió el editor ya es HTML: volver a
+    // escaparlo convertiría el &nbsp; de cada espacio en &amp;nbsp;, y el error
+    // se multiplicaría con cada pulsación.
+    const html = value === lastEmitted.current ? value : ensureHtml(value)
     if (el.innerHTML !== html) el.innerHTML = html
-  }, [value])
+  }, [value, showSource])
 
   const emit = useCallback(() => {
     const el = ref.current
-    if (el) onChange(el.innerHTML)
+    if (!el) return
+    // Al borrarlo todo, el navegador suele dejar un <br> suelto. Eso impide que
+    // reaparezca el texto de ayuda y guarda una plantilla "vacía" que parece
+    // llena, así que se normaliza a cadena vacía.
+    const raw = el.innerHTML
+    const html = /^(<br\s*\/?>|<div><br\s*\/?><\/div>|&nbsp;)$/i.test(raw.trim()) ? '' : raw
+    lastEmitted.current = html
+    onChange(html)
   }, [onChange])
 
   /** Refresca qué formatos están activos bajo el cursor. */
@@ -129,25 +196,42 @@ export function RichTextEditor({
     }
   }
 
+  /**
+   * Devuelve el foco al editor y recupera la selección que había antes de
+   * pulsar un botón. Un rango cuyos nodos ya fueron reemplazados deja de ser
+   * válido: en ese caso se descarta en vez de arrastrar el error.
+   */
   function restoreSelection() {
+    const editor = ref.current
+    if (!editor) return
+    editor.focus()
+
     const range = savedRange.current
-    if (!range) {
-      ref.current?.focus()
+    if (!range) return
+    if (!editor.contains(range.commonAncestorContainer)) {
+      savedRange.current = null
       return
     }
-    const sel = window.getSelection()
-    sel?.removeAllRanges()
-    sel?.addRange(range)
+    try {
+      const sel = window.getSelection()
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    } catch {
+      // El rango quedó desconectado del documento; se empieza de cero.
+      savedRange.current = null
+    }
   }
 
   /** Ejecuta un comando del editor conservando el foco y avisando del cambio. */
   const run = useCallback((command: string, arg?: string) => {
     restoreSelection()
-    ref.current?.focus()
     // styleWithCSS hace que se generen estilos en línea en vez de etiquetas
     // <font>, que los clientes de correo modernos interpretan mejor.
     try { document.execCommand('styleWithCSS', false, 'true') } catch { /* no soportado */ }
     document.execCommand(command, false, arg)
+    // El comando pudo reescribir el DOM: se vuelve a guardar el rango vigente
+    // para que el siguiente botón no trabaje sobre nodos obsoletos.
+    saveSelection()
     emit()
     syncActive()
   }, [emit, syncActive])
@@ -160,16 +244,26 @@ export function RichTextEditor({
    */
   function applyFontSize(px: number) {
     restoreSelection()
-    ref.current?.focus()
+    const editor = ref.current
+    if (!editor) return
+
     document.execCommand('fontSize', false, '7')
-    const marked = ref.current?.querySelectorAll('font[size="7"]')
-    marked?.forEach((node) => {
-      const span = document.createElement('span')
-      span.style.fontSize = `${px}px`
-      span.innerHTML = node.innerHTML
-      node.replaceWith(span)
-    })
+    const created = replaceFontMarkers(editor, px)
+
+    // Reselecciona el texto que se acaba de cambiar: así se puede seguir
+    // aplicando formato encima y el rango guardado vuelve a ser válido.
+    if (created.length > 0) {
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.setStartBefore(created[0])
+      range.setEndAfter(created[created.length - 1])
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+      savedRange.current = range.cloneRange()
+    }
+
     emit()
+    syncActive()
   }
 
   /**
@@ -315,7 +409,7 @@ export function RichTextEditor({
                 key={c}
                 type="button"
                 title={c}
-                onClick={() => { run('foreColor', c); setMenu(null) }}
+                onMouseDown={(e) => { e.preventDefault(); run('foreColor', c); setMenu(null) }}
                 className="h-5 w-5 rounded border border-gray-300 dark:border-gray-600"
                 style={{ background: c }}
               />
@@ -337,7 +431,7 @@ export function RichTextEditor({
                 key={c}
                 type="button"
                 title={c === 'transparent' ? 'Sin resaltado' : c}
-                onClick={() => { run('hiliteColor', c); setMenu(null) }}
+                onMouseDown={(e) => { e.preventDefault(); run('hiliteColor', c); setMenu(null) }}
                 className="h-5 w-5 rounded border border-gray-300 dark:border-gray-600"
                 style={{
                   background: c === 'transparent' ? 'repeating-linear-gradient(45deg,#eee,#eee 3px,#fff 3px,#fff 6px)' : c,
