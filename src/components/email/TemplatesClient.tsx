@@ -8,6 +8,7 @@ import {
 import { RichTextEditor, ensureHtml } from '@/components/email/RichTextEditor'
 import { AttachmentPreview } from '@/components/email/AttachmentPreview'
 import { compressImage, formatBytes } from '@/lib/image-compress'
+import { compressPdf, isPdf } from '@/lib/pdf-compress'
 import { MAX_ATTACHMENT_BYTES } from '@/lib/uploads'
 
 const VARIABLES = [
@@ -495,12 +496,15 @@ function AttachmentsSection({
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Mensaje de progreso mientras se comprime un archivo pesado.
+  const [notice, setNotice] = useState<string | null>(null)
   // Adjunto desplegado en vista previa (uno a la vez, para no cargar varios PDF).
   const [previewId, setPreviewId] = useState<string | null>(null)
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0 || !templateId) return
     setError(null)
+    setNotice(null)
     setUploading(true)
     // Acumulador local: dentro del bucle el `attachments` del closure no cambia,
     // así que vamos agregando aquí y propagamos el resultado en cada paso.
@@ -510,7 +514,28 @@ function AttachmentsSection({
       for (const original of Array.from(files)) {
         // Las fotos se reducen aquí: a tamaño completo no pasarían el límite
         // de subida, y un correo con imágenes enormes tarda en abrirse.
-        const file = await compressImage(original)
+        let file = await compressImage(original)
+
+        // Un PDF que no cabe se rasteriza. Se hace solo cuando hace falta,
+        // porque el texto deja de poder seleccionarse.
+        if (isPdf(file) && file.size > MAX_ATTACHMENT_BYTES) {
+          setNotice(`Comprimiendo ${original.name}…`)
+          const result = await compressPdf(file, MAX_ATTACHMENT_BYTES, (done, total) =>
+            setNotice(`Comprimiendo ${original.name} — página ${done} de ${total}…`),
+          )
+          setNotice(null)
+          if (result.compressed) {
+            setNotice(
+              `${original.name}: ${formatBytes(file.size)} → ${formatBytes(result.file.size)}`,
+            )
+          } else if (result.reason) {
+            throw new Error(
+              `${original.name} pesa ${formatBytes(file.size)} y no se pudo comprimir ` +
+              `(${result.reason}). Súbelo a Drive y enlázalo en el mensaje.`,
+            )
+          }
+          file = result.file
+        }
 
         if (file.size > MAX_ATTACHMENT_BYTES) {
           throw new Error(
@@ -532,6 +557,7 @@ function AttachmentsSection({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir')
+      setNotice(null)
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -650,6 +676,9 @@ function AttachmentsSection({
           </button>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
+          {notice && !error && (
+            <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p>
+          )}
           <p className="text-[11px] text-gray-400">
             PDF, fotos (JPG, PNG), Word, Excel y texto. Las fotos se optimizan
             solas al subirlas; el resto admite hasta {formatBytes(MAX_ATTACHMENT_BYTES)}.
