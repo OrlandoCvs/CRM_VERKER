@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import {
-  ALLOWED_MIME_TYPES,
   MAX_ATTACHMENT_BYTES,
+  resolveMimeType,
 } from '@/lib/uploads'
 
 type Ctx = { params: Promise<{ id: string }> }
@@ -34,8 +34,15 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       { status: 400 },
     )
   }
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return Response.json({ error: `Tipo de archivo no permitido: ${file.type || 'desconocido'}` }, { status: 400 })
+  // El tipo se deduce de la extensión: el navegador no reconoce formatos como
+  // .kmz y los manda sin tipo, lo que haría fallar una comprobación directa.
+  const mimeType = resolveMimeType(file.name, file.type)
+  if (!mimeType) {
+    const ext = file.name.includes('.') ? file.name.split('.').pop() : null
+    return Response.json(
+      { error: `Tipo de archivo no permitido: ${ext ? `.${ext}` : file.type || 'desconocido'}` },
+      { status: 400 },
+    )
   }
 
   const bytes = Buffer.from(await file.arrayBuffer())
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     data: {
       templateId: id,
       filename: file.name,
-      mimeType: file.type,
+      mimeType,
       size: file.size,
       data: bytes,
     },

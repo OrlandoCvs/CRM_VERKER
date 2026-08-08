@@ -9,7 +9,7 @@ import { RichTextEditor, ensureHtml } from '@/components/email/RichTextEditor'
 import { AttachmentPreview } from '@/components/email/AttachmentPreview'
 import { compressImage, formatBytes } from '@/lib/image-compress'
 import { compressPdf, isPdf } from '@/lib/pdf-compress'
-import { MAX_ATTACHMENT_BYTES } from '@/lib/uploads'
+import { ACCEPTED_EXTENSIONS, MAX_ATTACHMENT_BYTES } from '@/lib/uploads'
 
 const VARIABLES = [
   { key: 'name', label: 'Nombre' },
@@ -658,6 +658,7 @@ function AttachmentsSection({
             ref={inputRef}
             type="file"
             multiple
+            accept={ACCEPTED_EXTENSIONS}
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
@@ -680,8 +681,9 @@ function AttachmentsSection({
             <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p>
           )}
           <p className="text-[11px] text-gray-400">
-            PDF, fotos (JPG, PNG), Word, Excel y texto. Las fotos se optimizan
-            solas al subirlas; el resto admite hasta {formatBytes(MAX_ATTACHMENT_BYTES)}.
+            PDF, fotos (JPG, PNG), mapas de Google Earth (KMZ, KML), Word, Excel
+            y texto. Las fotos y los PDF pesados se optimizan solos al subirlos;
+            el resto admite hasta {formatBytes(MAX_ATTACHMENT_BYTES)}.
           </p>
         </>
       )}

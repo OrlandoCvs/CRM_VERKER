@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Image as ImageIcon, Paperclip, Download, ExternalLink, ChevronDown } from 'lucide-react'
+import { FileText, Image as ImageIcon, Map, Paperclip, Download, ExternalLink, ChevronDown } from 'lucide-react'
 
 /**
  * Lista de adjuntos con vista previa incrustada.
@@ -40,6 +40,11 @@ function isImage(mimeType: string): boolean {
   return mimeType.startsWith('image/')
 }
 
+/** Mapas de Google Earth: no se pueden previsualizar, pero sí distinguir. */
+function isMap(mimeType: string): boolean {
+  return mimeType.startsWith('application/vnd.google-earth')
+}
+
 export function AttachmentPreview({ attachments, label = 'Adjuntos' }: Props) {
   // Adjunto desplegado (solo uno a la vez, para no cargar varios PDF pesados).
   const [openId, setOpenId] = useState<string | null>(null)
@@ -59,7 +64,7 @@ export function AttachmentPreview({ attachments, label = 'Adjuntos' }: Props) {
         {attachments.map((a) => {
           const viewable = isPdf(a.mimeType) || isImage(a.mimeType)
           const open = openId === a.id
-          const Icon = isImage(a.mimeType) ? ImageIcon : FileText
+          const Icon = isImage(a.mimeType) ? ImageIcon : isMap(a.mimeType) ? Map : FileText
 
           return (
             <div key={a.id} className="rounded-lg border border-gray-200 overflow-hidden">

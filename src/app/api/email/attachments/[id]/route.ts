@@ -22,7 +22,12 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     return Response.json({ error: 'El adjunto no existe' }, { status: 404 })
   }
 
-  const download = req.nextUrl.searchParams.get('download') === '1'
+  // Solo se muestran dentro del navegador los formatos que sabe pintar; el
+  // resto se descarga siempre. Además de ser lo esperable para un .kmz o un
+  // Excel, evita que un archivo se interprete como página en nuestro dominio.
+  const previewable =
+    attachment.mimeType === 'application/pdf' || attachment.mimeType.startsWith('image/')
+  const download = req.nextUrl.searchParams.get('download') === '1' || !previewable
   // Comillas escapadas: un nombre con `"` rompería la cabecera.
   const safeName = attachment.filename.replace(/"/g, '')
 
