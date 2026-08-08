@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { RichTextEditor, ensureHtml } from '@/components/email/RichTextEditor'
 import { AttachmentPreview } from '@/components/email/AttachmentPreview'
+import { compressImage, formatBytes } from '@/lib/image-compress'
+import { MAX_ATTACHMENT_BYTES } from '@/lib/uploads'
 
 const VARIABLES = [
   { key: 'name', label: 'Nombre' },
@@ -505,7 +507,18 @@ function AttachmentsSection({
     const next = [...attachments]
     try {
       // Se suben en serie para poder reportar el primer error con claridad.
-      for (const file of Array.from(files)) {
+      for (const original of Array.from(files)) {
+        // Las fotos se reducen aquí: a tamaño completo no pasarían el límite
+        // de subida, y un correo con imágenes enormes tarda en abrirse.
+        const file = await compressImage(original)
+
+        if (file.size > MAX_ATTACHMENT_BYTES) {
+          throw new Error(
+            `${original.name} pesa ${formatBytes(file.size)} y el máximo por archivo es ` +
+            `${formatBytes(MAX_ATTACHMENT_BYTES)}. Comprímelo o divídelo antes de adjuntarlo.`,
+          )
+        }
+
         const fd = new FormData()
         fd.append('file', file)
         const res = await fetch(`/api/email/templates/${templateId}/attachments`, {
@@ -513,7 +526,7 @@ function AttachmentsSection({
           body: fd,
         })
         const data = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(data.error ?? `No se pudo subir ${file.name}`)
+        if (!res.ok) throw new Error(data.error ?? `No se pudo subir ${original.name}`)
         next.push(data)
         onChange([...next])
       }
@@ -638,7 +651,8 @@ function AttachmentsSection({
 
           {error && <p className="text-xs text-red-600">{error}</p>}
           <p className="text-[11px] text-gray-400">
-            PDF, imágenes, Word, Excel, texto. Máx. 10 MB por archivo.
+            PDF, fotos (JPG, PNG), Word, Excel y texto. Las fotos se optimizan
+            solas al subirlas; el resto admite hasta {formatBytes(MAX_ATTACHMENT_BYTES)}.
           </p>
         </>
       )}

@@ -6,7 +6,7 @@ import {
   List, ListOrdered, Indent, Outdent, Link2, Link2Off,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Quote, Minus, RemoveFormatting, Image as ImageIcon,
-  Palette, Highlighter, ChevronDown, Code2, Eye,
+  Palette, Highlighter, ChevronDown,
 } from 'lucide-react'
 
 /**
@@ -134,7 +134,6 @@ export function RichTextEditor({
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [menu, setMenu] = useState<string | null>(null)
-  const [showSource, setShowSource] = useState(false)
   // Formatos activos donde está el cursor, para iluminar los botones.
   const [active, setActive] = useState<Record<string, boolean>>({})
   // La selección se pierde al pulsar un botón: se guarda antes de abrir menús.
@@ -146,10 +145,6 @@ export function RichTextEditor({
 
   // Vuelca el valor recibido solo cuando difiere del DOM: escribirlo en cada
   // tecleo movería el cursor al principio en cada pulsación.
-  //
-  // Depende también de `showSource` porque al alternar con la vista de HTML el
-  // <div> se desmonta y vuelve a montarse vacío: sin esto, volver al editor
-  // mostraría el mensaje en blanco aunque el contenido siguiera guardado.
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -159,7 +154,7 @@ export function RichTextEditor({
     // se multiplicaría con cada pulsación.
     const html = value === lastEmitted.current ? value : ensureHtml(value)
     if (el.innerHTML !== html) el.innerHTML = html
-  }, [value, showSource])
+  }, [value])
 
   const emit = useCallback(() => {
     const el = ref.current
@@ -521,43 +516,24 @@ export function RichTextEditor({
           </>
         )}
 
-        <div className="ml-auto">
-          <TB
-            onClick={() => setShowSource((s) => !s)}
-            title={showSource ? 'Volver al editor' : 'Ver el HTML'}
-            active={showSource}
-          >
-            {showSource ? <Eye className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
-          </TB>
-        </div>
       </div>
 
       {/* ---------------- Área de edición ---------------- */}
-      {showSource ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          spellCheck={false}
-          style={{ minHeight }}
-          className="w-full resize-y bg-transparent p-3 font-mono text-xs text-gray-700 outline-none dark:text-gray-300"
-        />
-      ) : (
-        <div
-          ref={ref}
-          contentEditable
-          suppressContentEditableWarning
-          role="textbox"
-          aria-multiline="true"
-          aria-label="Cuerpo del mensaje"
-          data-placeholder={placeholder}
-          onInput={emit}
-          onBlur={() => { saveSelection(); emit() }}
-          onKeyUp={syncActive}
-          onMouseUp={syncActive}
-          style={{ minHeight }}
-          className="rich-editor overflow-y-auto p-3 text-sm text-gray-800 dark:text-gray-200"
-        />
-      )}
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Cuerpo del mensaje"
+        data-placeholder={placeholder}
+        onInput={emit}
+        onBlur={() => { saveSelection(); emit() }}
+        onKeyUp={syncActive}
+        onMouseUp={syncActive}
+        style={{ minHeight }}
+        className="rich-editor overflow-y-auto p-3 text-sm text-gray-800 dark:text-gray-200"
+      />
     </div>
   )
 }
