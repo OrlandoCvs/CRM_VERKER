@@ -45,6 +45,9 @@ export interface Lead {
   emailStatus?: string | null
   emailStatusAt?: string | null
   emailStatusReason?: string | null
+  // Baja voluntaria: si tiene fecha, el CRM no le envía correos.
+  unsubscribedAt?: string | null
+  unsubscribeSource?: string | null
   // Folder organization
   folderId?: string | null
   createdAt: string

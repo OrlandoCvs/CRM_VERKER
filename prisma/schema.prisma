@@ -67,6 +67,11 @@ model Lead {
   emailStatus       String   @default("unknown")
   emailStatusAt     DateTime?
   emailStatusReason String?
+  // Baja voluntaria. Cuando tiene fecha, el CRM no vuelve a escribir a este
+  // lead: lo exige la ley y, en la práctica, seguir enviando dispara las
+  // quejas por spam y hunde la reputación del dominio.
+  unsubscribedAt    DateTime?
+  unsubscribeSource String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -77,6 +82,7 @@ model Lead {
 
   @@index([folderId])
   @@index([emailStatus])
+  @@index([unsubscribedAt])
 }
 
 /// Correos enviados por el CRM. Guarda el id que devuelve el proveedor para

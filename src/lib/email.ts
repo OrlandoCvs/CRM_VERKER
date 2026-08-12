@@ -47,6 +47,13 @@ export interface SendEmailParams {
   text?: string
   replyTo?: string
   attachments?: EmailAttachment[]
+  /**
+   * URL de baja del destinatario. Se envía en la cabecera `List-Unsubscribe`,
+   * que Gmail y Yahoo exigen desde 2024 a quien manda correo en volumen: sin
+   * ella, los mensajes acaban en spam por muy bien configurado que esté el
+   * dominio.
+   */
+  unsubscribeUrl?: string
 }
 
 export interface SendResult {
@@ -88,6 +95,16 @@ async function sendViaResend(params: SendEmailParams, from: string): Promise<Sen
         html: params.html,
         text: params.text,
         reply_to: params.replyTo,
+        ...(params.unsubscribeUrl
+          ? {
+              headers: {
+                'List-Unsubscribe': `<${params.unsubscribeUrl}>`,
+                // Declara que la baja se aplica con una sola petición, sin
+                // pedirle nada más al destinatario.
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+              },
+            }
+          : {}),
         // Resend espera el contenido en base64.
         attachments: params.attachments?.map((a) => ({
           filename: a.filename,
@@ -115,6 +132,14 @@ async function sendViaSmtp(params: SendEmailParams, from: string): Promise<SendR
       html: params.html,
       text: params.text,
       replyTo: params.replyTo,
+      ...(params.unsubscribeUrl
+        ? {
+            headers: {
+              'List-Unsubscribe': `<${params.unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
+          }
+        : {}),
       attachments: params.attachments?.map((a) => ({
         filename: a.filename,
         content: a.content,
@@ -237,4 +262,54 @@ export function bodyToPlainText(body: string): string {
     // Compacta los huecos que dejan las etiquetas anidadas.
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+/* --------------------------- Pie de baja --------------------------- */
+
+/**
+ * Pie legal que se añade a todos los correos salientes.
+ *
+ * Cumple dos funciones a la vez: da el medio de oposición que exige la ley
+ * mexicana (LFPDPPP) y satisface el requisito de Gmail y Yahoo de ofrecer baja
+ * visible. Explicar quién escribe y por qué también reduce las denuncias por
+ * spam, que son lo que de verdad hunde la reputación de un dominio.
+ */
+
+/** Nombre del remitente que se muestra en el pie. */
+function senderName(): string {
+  return process.env.EMAIL_SENDER_NAME?.trim() || 'Verker'
+}
+
+/** Escapa texto para insertarlo en el HTML del pie. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** Versión HTML del pie, separada del mensaje por una línea fina. */
+export function unsubscribeFooterHtml(unsubscribeUrl: string): string {
+  const name = escapeHtml(senderName())
+  const url = escapeHtml(unsubscribeUrl)
+  return (
+    '<div style="margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;' +
+    'font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#6b7280;">' +
+    `Este mensaje te lo envía <strong>${name}</strong> porque tu negocio aparece en ` +
+    'directorios públicos de tu sector. No compartimos tus datos con terceros.<br>' +
+    `Si no deseas recibir más correos, <a href="${url}" style="color:#2563eb;">` +
+    'date de baja aquí</a> y no volveremos a escribirte.' +
+    '</div>'
+  )
+}
+
+/** Versión en texto plano del mismo pie. */
+export function unsubscribeFooterText(unsubscribeUrl: string): string {
+  return (
+    '\n\n----------\n' +
+    `Este mensaje te lo envía ${senderName()} porque tu negocio aparece en ` +
+    'directorios públicos de tu sector. No compartimos tus datos con terceros.\n' +
+    `Si no deseas recibir más correos, date de baja aquí: ${unsubscribeUrl}`
+  )
 }

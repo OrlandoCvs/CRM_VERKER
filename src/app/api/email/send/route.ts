@@ -1,11 +1,14 @@
 import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
+import { unsubscribeUrl, publicBaseUrl } from '@/lib/unsubscribe'
 import {
   getEmailStatus,
   sendEmail,
   renderTemplate,
   bodyToHtml,
   bodyToPlainText,
+  unsubscribeFooterHtml,
+  unsubscribeFooterText,
   type TemplateLead,
   type EmailAttachment,
 } from '@/lib/email'
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
   })
 
   const results: PerLeadResult[] = []
+  const baseUrl = publicBaseUrl()
 
   // Envío secuencial: respeta los límites de tasa de Gmail/SMTP y permite
   // reportar el resultado de cada destinatario por separado.
@@ -73,6 +77,19 @@ export async function POST(req: NextRequest) {
     const email = lead.email?.trim() || null
     if (!email) {
       results.push({ leadId: lead.id, name: lead.name, email: null, status: 'skipped', error: 'Sin email' })
+      continue
+    }
+
+    // Una baja solicitada es definitiva: volver a escribir sería ilegal además
+    // de contraproducente.
+    if (lead.unsubscribedAt) {
+      results.push({
+        leadId: lead.id,
+        name: lead.name,
+        email,
+        status: 'skipped',
+        error: 'Se dio de baja',
+      })
       continue
     }
 
@@ -90,13 +107,17 @@ export async function POST(req: NextRequest) {
     // antiguas); ambos se resuelven aquí a las dos versiones del correo.
     const renderedBody = renderTemplate(body, templateLead)
 
+    // Cada destinatario recibe su propio enlace de baja, firmado con su id.
+    const bajaUrl = unsubscribeUrl(lead.id, baseUrl)
+
     const result = await sendEmail({
       to: email,
       subject: renderedSubject,
-      text: bodyToPlainText(renderedBody),
-      html: bodyToHtml(renderedBody),
+      text: bodyToPlainText(renderedBody) + unsubscribeFooterText(bajaUrl),
+      html: bodyToHtml(renderedBody) + unsubscribeFooterHtml(bajaUrl),
       replyTo: replyTo?.trim() || undefined,
       attachments,
+      unsubscribeUrl: bajaUrl,
     })
 
     if (result.ok) {

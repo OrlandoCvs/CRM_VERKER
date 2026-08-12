@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Phone, Globe, MapPin, Star, Mail,
   Edit, Trash2, Plus, MessageSquare, PhoneCall, AtSign, CalendarDays,
-  Clock, ExternalLink,
+  Clock, ExternalLink, MailX,
 } from 'lucide-react'
 import { SourceBadge } from '@/components/ui/Badge'
 import { LeadFormModal } from '@/components/leads/LeadFormModal'
@@ -134,8 +134,14 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowEmail(true)}
-            disabled={!lead.email}
-            title={lead.email ? `Enviar correo a ${lead.email}` : 'Este lead no tiene email'}
+            disabled={!lead.email || Boolean(lead.unsubscribedAt)}
+            title={
+              lead.unsubscribedAt
+                ? 'Este contacto se dio de baja: no se le puede escribir'
+                : lead.email
+                  ? `Enviar correo a ${lead.email}`
+                  : 'Este lead no tiene email'
+            }
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Mail className="w-3.5 h-3.5" /> Enviar correo
@@ -178,6 +184,26 @@ export function LeadDetailClient({ lead: initialLead }: Props) {
                   {lead.price && <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{lead.price}</span>}
                 </div>
               </div>
+
+              {/* Una baja bloquea el envío: conviene verla antes de intentar
+                  escribirle y no descubrirlo al recibir el "omitido". */}
+              {lead.unsubscribedAt && (
+                <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+                  <MailX className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">Se dio de baja</p>
+                    <p className="text-xs">
+                      Pidió no recibir más correos el{' '}
+                      {new Date(lead.unsubscribedAt).toLocaleDateString('es-MX', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                      . El sistema no le enviará nada.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {lead.phone && (

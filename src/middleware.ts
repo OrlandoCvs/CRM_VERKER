@@ -35,11 +35,13 @@ export async function middleware(req: NextRequest) {
 
 /**
  * Se aplica a todo salvo: la propia página de login, su endpoint de auth, el
- * webhook de Resend (lo llama un servicio externo, se valida por firma propia)
- * y los recursos estáticos de Next.
+ * webhook de Resend (lo llama un servicio externo, se valida por firma propia),
+ * la página de baja y su API —que abren los destinatarios de los correos, sin
+ * cuenta en el CRM, y se validan con un token firmado— y los recursos
+ * estáticos de Next.
  */
 export const config = {
   matcher: [
-    '/((?!login|api/auth|api/email/webhook|_next/static|_next/image|favicon.ico).*)',
+    '/((?!login|api/auth|api/email/webhook|baja|api/unsubscribe|_next/static|_next/image|favicon.ico).*)',
   ],
 }
