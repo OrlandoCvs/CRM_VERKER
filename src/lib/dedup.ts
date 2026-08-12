@@ -41,22 +41,45 @@ function normalizeText(text?: string | null): string | null {
   return cleaned || null
 }
 
+/**
+ * Normaliza una URL de perfil de LinkedIn a su identificador público.
+ *
+ * `https://www.linkedin.com/in/juan-perez/` y `linkedin.com/in/juan-perez?x=1`
+ * son la misma persona, así que se reduce todo al tramo que sigue a `/in/`.
+ */
+function normalizeLinkedIn(url?: string | null): string | null {
+  if (!url) return null
+  const match = url.trim().toLowerCase().match(/linkedin\.com\/in\/([^/?#]+)/)
+  return match?.[1] ?? null
+}
+
 export interface DedupCandidate {
   placeId?: string | null
   name?: string | null
   phone?: string | null
   website?: string | null
   city?: string | null
+  /** URL del perfil de LinkedIn: identifica a una persona sin ambigüedad. */
+  linkedin?: string | null
+  /**
+   * Marca que el candidato es una persona, no un negocio.
+   *
+   * Cambia las reglas: dos personas homónimas en la misma ciudad son habituales
+   * («Juan Pérez» en Monterrey), así que esa combinación deja de servir como
+   * prueba de duplicado. Para un negocio sí sirve.
+   */
+  isPerson?: boolean
 }
 
 /**
- * Busca un lead existente que sea el mismo negocio que `candidate`.
+ * Busca un lead existente que sea el mismo contacto que `candidate`.
  * Devuelve su id, o null si no hay duplicado.
  *
- * Orden de confianza: placeId exacto → teléfono → web → nombre+ciudad.
+ * Orden de confianza: placeId → perfil de LinkedIn → teléfono → web →
+ * nombre+ciudad (esta última solo para negocios).
  */
 export async function findDuplicateLead(candidate: DedupCandidate): Promise<string | null> {
-  // 1. placeId exacto (la señal más fiable).
+  // 1. placeId exacto (la señal más fiable para un negocio).
   if (candidate.placeId) {
     const byPlace = await prisma.lead.findFirst({
       where: { placeId: candidate.placeId },
@@ -71,18 +94,27 @@ export async function findDuplicateLead(candidate: DedupCandidate): Promise<stri
   const website = normalizeWebsite(candidate.website)
   const name = normalizeText(candidate.name)
   const city = normalizeText(candidate.city)
+  const linkedin = normalizeLinkedIn(candidate.linkedin)
 
-  if (!phone && !website && !name) return null
+  if (!phone && !website && !name && !linkedin) return null
 
   const existing = await prisma.lead.findMany({
-    select: { id: true, name: true, phone: true, website: true, city: true },
+    select: { id: true, name: true, phone: true, website: true, city: true, linkedin: true },
   })
 
   for (const lead of existing) {
+    // El perfil de LinkedIn identifica a una persona sin ambigüedad: va primero.
+    if (linkedin && normalizeLinkedIn(lead.linkedin) === linkedin) return lead.id
     if (phone && normalizePhone(lead.phone) === phone) return lead.id
     if (website && normalizeWebsite(lead.website) === website) return lead.id
     // Nombre + ciudad juntos: el nombre solo daría demasiados falsos positivos.
-    if (name && city && normalizeText(lead.name) === name && normalizeText(lead.city) === city) {
+    // No se aplica a personas, donde los homónimos son frecuentes.
+    if (
+      !candidate.isPerson &&
+      name && city &&
+      normalizeText(lead.name) === name &&
+      normalizeText(lead.city) === city
+    ) {
       return lead.id
     }
   }

@@ -20,9 +20,11 @@ import {
   Map,
   Trash2,
   Sparkles,
+  UserSearch,
 } from 'lucide-react'
 import { circleToGeoJsonPolygon, verticesToGeoJsonPolygon } from '@/lib/geo'
 import { ApifyUsage } from '@/components/search/ApifyUsage'
+import { LinkedInSearch } from '@/components/search/LinkedInSearch'
 
 interface OpeningHour { day: string; hours: string }
 
@@ -157,7 +159,7 @@ export function SearchClient() {
   }, [results, searchMeta, imported, importSummary])
 
   // Map mode state
-  const [searchMode, setSearchMode] = useState<'text' | 'map'>('text')
+  const [searchMode, setSearchMode] = useState<'text' | 'map' | 'linkedin'>('text')
   const [shape, setShape] = useState<'circle' | 'polygon'>('circle')
   const [center, setCenter] = useState<[number, number] | null>(null)
   const [radiusKm, setRadiusKm] = useState(2)
@@ -270,30 +272,44 @@ export function SearchClient() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Buscar Negocios</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
-            Encuentra negocios en Google Places y agrégalos como leads
+            {searchMode === 'linkedin'
+              ? 'Encuentra personas en LinkedIn por cargo, empresa o ubicación'
+              : 'Encuentra negocios en Google Places y agrégalos como leads'}
           </p>
         </div>
         {/* Saldo de Apify a la vista: cada búsqueda consume créditos. */}
         <ApifyUsage />
       </div>
 
+      {/* Selector de fuente. Vive fuera del formulario porque LinkedIn tiene el
+          suyo propio: los criterios de una búsqueda de personas no se parecen
+          a los de una de negocios. */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
+        <ModeTab
+          active={searchMode === 'text'}
+          onClick={() => setSearchMode('text')}
+          icon={Search}
+          label="Por texto"
+        />
+        <ModeTab
+          active={searchMode === 'map'}
+          onClick={() => setSearchMode('map')}
+          icon={Map}
+          label="En el mapa"
+        />
+        <ModeTab
+          active={searchMode === 'linkedin'}
+          onClick={() => setSearchMode('linkedin')}
+          icon={UserSearch}
+          label="En LinkedIn"
+        />
+      </div>
+
+      {searchMode === 'linkedin' && <LinkedInSearch />}
+
       {/* Search form */}
+      {searchMode !== 'linkedin' && (
       <form onSubmit={handleSearch} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
-        {/* Mode toggle */}
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
-          <ModeTab
-            active={searchMode === 'text'}
-            onClick={() => setSearchMode('text')}
-            icon={Search}
-            label="Por texto"
-          />
-          <ModeTab
-            active={searchMode === 'map'}
-            onClick={() => setSearchMode('map')}
-            icon={Map}
-            label="En el mapa"
-          />
-        </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Negocio o palabra clave</label>
@@ -474,9 +490,10 @@ export function SearchClient() {
           </button>
         </div>
       </form>
+      )}
 
       {/* Error */}
-      {error && (
+      {searchMode !== 'linkedin' && error && (
         <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <div>
@@ -487,7 +504,7 @@ export function SearchClient() {
       )}
 
       {/* Loading state */}
-      {loading && (
+      {searchMode !== 'linkedin' && loading && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
           <p className="text-gray-500 dark:text-gray-400 text-sm">Buscando en Google Places via Apify...</p>
@@ -496,7 +513,7 @@ export function SearchClient() {
       )}
 
       {/* Results */}
-      {!loading && results.length > 0 && (
+      {searchMode !== 'linkedin' && !loading && results.length > 0 && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-gray-600 dark:text-gray-400">

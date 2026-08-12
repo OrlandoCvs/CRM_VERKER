@@ -1,5 +1,5 @@
 export type LeadStatus = 'new' | 'contacted' | 'negotiating' | 'won' | 'lost'
-export type LeadSource = 'google_places' | 'manual' | 'import'
+export type LeadSource = 'google_places' | 'manual' | 'import' | 'linkedin'
 export type ActivityType = 'call' | 'email' | 'meeting' | 'note'
 
 export interface Lead {
@@ -130,6 +130,7 @@ export const SOURCE_LABELS: Record<LeadSource, string> = {
   google_places: 'Google Places',
   manual: 'Manual',
   import: 'Importado',
+  linkedin: 'LinkedIn',
 }
 
 export const PIPELINE_COLUMNS: LeadStatus[] = [
