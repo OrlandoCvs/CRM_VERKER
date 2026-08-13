@@ -8,17 +8,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // La app usa la conexión POOLED (con -pooler): en serverless (Vercel) muchas
   // instancias comparten el pool y no saturan la base.
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
   // Las migraciones usan la conexión DIRECTA (sin -pooler): un pooler no soporta
   // los comandos DDL/transaccionales que necesita `migrate deploy`.
   directUrl = env("DIRECT_URL")
 }
 
 model Lead {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   name              String
   email             String?
   phone             String?
@@ -30,10 +30,10 @@ model Lead {
   category          String?
   rating            Float?
   reviewCount       Int?
-  source            String   @default("manual")
+  source            String    @default("manual")
   sourceQuery       String?
-  placeId           String?  @unique
-  status            String   @default("new")
+  placeId           String?   @unique
+  status            String    @default("new")
   notes             String?
   tags              String?
   // Location coordinates
@@ -43,8 +43,8 @@ model Lead {
   imageUrl          String?
   description       String?
   price             String?
-  permanentlyClosed Boolean? @default(false)
-  temporarilyClosed Boolean? @default(false)
+  permanentlyClosed Boolean?  @default(false)
+  temporarilyClosed Boolean?  @default(false)
   // Social media (from Apify company contacts enrichment)
   instagram         String?
   facebook          String?
@@ -58,13 +58,13 @@ model Lead {
   webResults        String?
   // Folder organization
   folderId          String?
-  folder            Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder            Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
   // Estado de entregabilidad del email (lo actualiza el webhook de Resend).
   //   unknown     → sin envíos todavía
   //   valid       → al menos un correo entregado
   //   bounced     → rebote duro: la dirección no existe, no volver a enviar
   //   complained  → marcó el correo como spam, no volver a contactar nunca
-  emailStatus       String   @default("unknown")
+  emailStatus       String    @default("unknown")
   emailStatusAt     DateTime?
   emailStatusReason String?
   // Baja voluntaria. Cuando tiene fecha, el CRM no vuelve a escribir a este
@@ -72,13 +72,13 @@ model Lead {
   // quejas por spam y hunde la reputación del dominio.
   unsubscribedAt    DateTime?
   unsubscribeSource String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  activities   Activity[]
-  contacts     Contact[]
+  activities      Activity[]
+  contacts        Contact[]
   emailDeliveries EmailDelivery[]
-  reminders    Reminder[]
+  reminders       Reminder[]
 
   @@index([folderId])
   @@index([emailStatus])
@@ -179,4 +179,74 @@ model EmailAttachment {
   createdAt  DateTime      @default(now())
 
   @@index([templateId])
+}
+
+/// Historial de búsquedas de prospectos (Google Places y LinkedIn).
+///
+/// Cada búsqueda cuesta créditos de Apify, así que sus resultados se conservan
+/// aquí en vez de depender del dataset de Apify, que se borra a los pocos días
+/// en el plan gratuito. Permite reabrir una búsqueda pasada y decidir a quién
+/// importar sin volver a pagarla.
+///
+/// Se limpia solo: las búsquedas de más de 30 días se borran al listar el
+/// historial (ver `lib/search-history.ts`).
+model SearchRun {
+  id          String   @id @default(cuid())
+  /// 'google_places' | 'linkedin'. Determina qué campos trae cada perfil.
+  source      String   @default("linkedin")
+  /// Criterios en texto legible, para reconocerla en la lista.
+  label       String
+  /// Filtros exactos, en JSON, por si se quiere repetir la búsqueda.
+  filters     String?
+  /// Id de la ejecución en Apify, para poder rastrearla allí.
+  runId       String?
+  resultCount Int      @default(0)
+  emailCount  Int      @default(0)
+  /// Coste real en dólares, cuando Apify lo informa.
+  costUsd     Float?
+  createdAt   DateTime @default(now())
+
+  results SearchResult[]
+
+  @@index([source, createdAt])
+  @@index([createdAt])
+}
+
+/// Resultado guardado de una búsqueda, ya normalizado.
+///
+/// Sirve para las dos fuentes: un negocio de Google Places y una persona de
+/// LinkedIn comparten nombre, empresa, contacto y ubicación. Lo que solo tiene
+/// una de ellas (horarios, reseñas, experiencia laboral) NO se guarda: ocuparía
+/// mucho y para decidir si importar basta con lo esencial. Al importar se crea
+/// el lead con estos campos.
+model SearchResult {
+  id             String    @id @default(cuid())
+  runId          String
+  run            SearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  /// Identificador en su origen: placeId de Google, o id de perfil de LinkedIn.
+  externalId     String
+  name           String
+  /// Titular de LinkedIn o categoría del negocio, según la fuente.
+  headline       String?
+  company        String?
+  /// Cargo (LinkedIn) o categoría del negocio (Places).
+  position       String?
+  email          String?
+  phone          String?
+  website        String?
+  address        String?
+  city           String?
+  country        String?
+  /// URL del perfil de LinkedIn; vacío en resultados de Places.
+  linkedinUrl    String?
+  photo          String?
+  about          String?
+  /// Nº de contactos (LinkedIn) o de reseñas (Places).
+  connections    Int?
+  rating         Float?
+  /// Lead creado a partir de este resultado, si ya se importó.
+  importedLeadId String?
+  createdAt      DateTime  @default(now())
+
+  @@index([runId])
 }

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { searchLinkedInProfiles, estimateCost, type LinkedInSearchParams } from '@/lib/linkedin'
+import { recordSearch } from '@/lib/search-history'
 
 /**
  * POST /api/apify/linkedin-search
@@ -79,7 +80,31 @@ export async function POST(req: NextRequest) {
 
   try {
     const results = await searchLinkedInProfiles(params)
+
+    // Se guarda en el historial para poder reabrir esta búsqueda sin volver a
+    // pagarla. Si falla, la búsqueda sigue devolviéndose igual.
+    const historyId = await recordSearch({
+      source: 'linkedin',
+      label: [query, jobTitles.join(', '), locations.join(', ')].filter(Boolean).join(' · '),
+      filters: { query, jobTitles, locations, companies, maxProfiles, withEmail },
+      results: results.map((r) => ({
+        externalId: r.profileId,
+        name: r.name,
+        headline: r.headline,
+        company: r.company,
+        position: r.position,
+        email: r.email,
+        city: r.city,
+        country: r.country,
+        linkedinUrl: r.linkedinUrl,
+        photo: r.photo,
+        about: r.about,
+        connections: r.connections,
+      })),
+    })
+
     return Response.json({
+      historyId,
       results,
       meta: {
         requested: maxProfiles,

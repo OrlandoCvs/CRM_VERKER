@@ -25,6 +25,7 @@ import {
 import { circleToGeoJsonPolygon, verticesToGeoJsonPolygon } from '@/lib/geo'
 import { ApifyUsage } from '@/components/search/ApifyUsage'
 import { LinkedInSearch } from '@/components/search/LinkedInSearch'
+import { SearchHistory } from '@/components/search/SearchHistory'
 
 interface OpeningHour { day: string; hours: string }
 
@@ -152,6 +153,8 @@ export function SearchClient() {
   const [searchMeta, setSearchMeta] = useState<{ query: string; location: string } | null>(
     () => loadPersisted()?.searchMeta ?? null,
   )
+  // Fuerza a recargar el historial cuando se completa una búsqueda nueva.
+  const [historyKey, setHistoryKey] = useState(0)
 
   // Cada vez que cambian los resultados/importados, se persisten en la sesión.
   useEffect(() => {
@@ -232,6 +235,7 @@ export function SearchClient() {
       if (!res.ok) throw new Error(data.error ?? 'Error al buscar')
       setResults(data.items ?? [])
       setSearchMeta({ query: data.query ?? query, location: metaLocation })
+      setHistoryKey((k) => k + 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -507,6 +511,10 @@ export function SearchClient() {
           </button>
         </div>
       </form>
+      )}
+
+      {searchMode !== 'linkedin' && (
+        <SearchHistory key={historyKey} source="google_places" />
       )}
 
       {/* Error */}

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import {
   Search, Loader2, AlertCircle, Plus, Check, Briefcase, MapPin,
-  Building2, UserSearch, Mail, Users, Trash2, Info, History,
+  Building2, UserSearch, Mail, Users, Trash2, Info,
 } from 'lucide-react'
+import { SearchHistory } from '@/components/search/SearchHistory'
 
 /**
  * Búsqueda de personas en LinkedIn.
@@ -156,9 +157,8 @@ export function LinkedInSearch() {
     () => new Set(loadPersisted()?.imported ?? []),
   )
   const [summary, setSummary] = useState<string | null>(() => loadPersisted()?.summary ?? null)
-  // Rescate de una búsqueda ya pagada cuyos resultados se perdieron.
-  const [recovering, setRecovering] = useState(false)
-  const [recovered, setRecovered] = useState<string | null>(null)
+  // Fuerza a recargar el historial cuando se completa una búsqueda nueva.
+  const [historyKey, setHistoryKey] = useState(0)
 
   // Persistir evita perder una búsqueda ya pagada al cambiar de pestaña.
   useEffect(() => {
@@ -228,6 +228,7 @@ export function LinkedInSearch() {
         withEmail: data.meta?.withEmail ?? false,
       })
       setImported(new Set())
+      setHistoryKey((k) => k + 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -266,34 +267,6 @@ export function LinkedInSearch() {
     if (duplicates) parts.push(`${duplicates} ya existían`)
     if (errors) parts.push(`${errors} con error`)
     setSummary(parts.join(' · '))
-  }
-
-  /**
-   * Guarda los perfiles de la última búsqueda ejecutada en Apify.
-   *
-   * Sirve cuando la vista se perdió pero el gasto ya se hizo: los resultados
-   * siguen en el dataset de Apify durante días.
-   */
-  async function recoverLast() {
-    setRecovering(true)
-    setRecovered(null)
-    setError(null)
-    try {
-      const res = await fetch('/api/apify/linkedin-recover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderName: 'LinkedIn' }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'No se pudo recuperar')
-      const partes = [`${data.created} guardados en «${data.folder.name}»`]
-      if (data.duplicates) partes.push(`${data.duplicates} ya estaban`)
-      setRecovered(partes.join(' · '))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo recuperar')
-    } finally {
-      setRecovering(false)
-    }
   }
 
   function clearResults() {
@@ -446,38 +419,7 @@ export function LinkedInSearch() {
         )}
       </form>
 
-      {/* Rescate de una búsqueda ya pagada. Se ofrece solo cuando no hay nada
-          en pantalla, que es justo cuando se ha perdido la vista. */}
-      {results.length === 0 && !loading && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/60">
-          <History className="h-4 w-4 shrink-0 text-gray-400" />
-          <p className="flex-1 text-xs text-gray-600 dark:text-gray-400">
-            ¿Hiciste una búsqueda y perdiste los resultados? Se pueden rescatar
-            sin volver a pagarla.
-          </p>
-          <button
-            type="button"
-            onClick={recoverLast}
-            disabled={recovering}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-          >
-            {recovering ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Rescatando…
-              </>
-            ) : (
-              'Guardar la última búsqueda'
-            )}
-          </button>
-        </div>
-      )}
-
-      {recovered && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-          <Check className="h-4 w-4 shrink-0" />
-          {recovered}
-        </div>
-      )}
+      <SearchHistory key={historyKey} source="linkedin" />
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
