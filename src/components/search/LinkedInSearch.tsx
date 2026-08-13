@@ -74,6 +74,45 @@ function estimateCost(maxProfiles: number, withEmail: boolean): number {
   return pages * COST_PER_PAGE + maxProfiles * perProfile
 }
 
+/**
+ * Países que se pueden anexar a la ciudad.
+ *
+ * LinkedIn resuelve el texto de ubicación tomando la primera coincidencia de su
+ * autocompletado, así que una ciudad a secas puede caer en otro país: hay un
+ * Torreón en España y otro en México, y «UK» le devuelve Ucrania. Añadir el
+ * país al final es la forma de desambiguar.
+ */
+const COUNTRIES = [
+  { value: 'Mexico', label: '🇲🇽 México' },
+  { value: 'Spain', label: '🇪🇸 España' },
+  { value: 'Colombia', label: '🇨🇴 Colombia' },
+  { value: 'Argentina', label: '🇦🇷 Argentina' },
+  { value: 'Chile', label: '🇨🇱 Chile' },
+  { value: 'Peru', label: '🇵🇪 Perú' },
+  { value: 'United States', label: '🇺🇸 Estados Unidos' },
+  { value: '', label: 'Sin país' },
+]
+
+/**
+ * Une ciudad y país como LinkedIn espera verlo: «Torreón, Mexico».
+ * Si no se escribe ciudad, se busca en todo el país.
+ */
+function composeLocation(city: string, country: string): string {
+  // Abreviaturas de país que LinkedIn no reconoce y abortan la búsqueda
+  // entera: se quitan del final para sustituirlas por el nombre completo.
+  const trimmed = city
+    .trim()
+    .replace(/[.,\s]+$/, '')
+    .replace(/[,\s]+(mx|mex|méx|esp|col|arg|usa|eeuu|ee\.?uu\.?)\.?$/i, '')
+    .replace(/[.,\s]+$/, '')
+
+  if (!trimmed) return country
+  if (!country) return trimmed
+  // Evita duplicar el país si el usuario ya lo escribió.
+  if (trimmed.toLowerCase().includes(country.toLowerCase())) return trimmed
+  return `${trimmed}, ${country}`
+}
+
 /** Convierte "Director, Gerente" en ['Director', 'Gerente']. */
 function splitList(value: string): string[] {
   return value
@@ -87,6 +126,8 @@ export function LinkedInSearch() {
   const [jobTitles, setJobTitles] = useState('')
   const [locations, setLocations] = useState('')
   const [companies, setCompanies] = useState('')
+  // México por defecto: es donde opera el cliente.
+  const [country, setCountry] = useState('Mexico')
   const [maxProfiles, setMaxProfiles] = useState(25)
   const [withEmail, setWithEmail] = useState(false)
 
@@ -117,6 +158,7 @@ export function LinkedInSearch() {
     }
   }, [results, meta, imported, summary])
 
+  const resolvedLocation = composeLocation(locations, country)
   const cost = estimateCost(maxProfiles, withEmail)
   const hasCriteria = query.trim() || jobTitles.trim() || companies.trim()
 
@@ -138,8 +180,8 @@ export function LinkedInSearch() {
         body: JSON.stringify({
           query: query.trim(),
           jobTitles: splitList(jobTitles),
-          // Sin trocear: una coma aquí sería parte del nombre, no un separador.
-          locations: locations.trim() ? [locations.trim()] : [],
+          // Ciudad y país juntos, tal como LinkedIn muestra la ubicación.
+          locations: resolvedLocation ? [resolvedLocation] : [],
           companies: splitList(companies),
           maxProfiles,
           withEmail,
@@ -153,15 +195,15 @@ export function LinkedInSearch() {
       // decirlo en vez de dejar la pantalla en blanco.
       if ((data.results?.length ?? 0) === 0) {
         setError(
-          'LinkedIn no devolvió ningún perfil. Suele pasar por dos motivos: ' +
-          'la ubicación no se reconoce (escribe solo la ciudad, sin estado ni país), ' +
-          'o los filtros son tan estrechos que nadie los cumple. Prueba con menos filtros.',
+          'LinkedIn no devolvió ningún perfil. Suele ser porque los filtros son ' +
+          'demasiado estrechos: prueba con menos cargos, una ciudad más grande, ' +
+          'o deja la ubicación vacía para buscar en todo el país.',
         )
       }
 
       setResults(data.results ?? [])
       setMeta({
-        query: [query.trim(), jobTitles.trim(), locations.trim()].filter(Boolean).join(' · '),
+        query: [query.trim(), jobTitles.trim(), resolvedLocation].filter(Boolean).join(' · '),
         found: data.meta?.found ?? 0,
         withEmailCount: data.meta?.withEmailCount ?? 0,
         withEmail: data.meta?.withEmail ?? false,
@@ -244,18 +286,36 @@ export function LinkedInSearch() {
             />
           </Field>
 
-          <Field label="Ubicación" hint="Solo la ciudad, sin estado ni país">
-            <IconInput
-              icon={MapPin}
-              value={locations}
-              onChange={setLocations}
-              placeholder="Torreón"
-            />
-            {locations.includes(',') && (
-              <p className="flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-                Escribe una sola ubicación. LinkedIn cancela la búsqueda entera
-                si no reconoce alguna: «Torreón», no «Torreón, Coahuila, MX».
+          <Field label="Ubicación" hint="Ciudad o estado">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={locations}
+                  onChange={(e) => setLocations(e.target.value)}
+                  placeholder="Torreón"
+                  className="w-full rounded-lg border border-gray-200 py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                />
+              </div>
+              {/* El país se añade a la ubicación antes de enviarla: LinkedIn
+                  toma la primera coincidencia de su autocompletado, y sin país
+                  un «Torreón» puede resolverse al de España. */}
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                title="País al que pertenece la ciudad"
+                className="w-36 shrink-0 rounded-lg border border-gray-200 px-2 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {resolvedLocation && (
+              <p className="text-[11px] text-gray-400">
+                Se buscará en: <span className="font-medium text-gray-600 dark:text-gray-300">{resolvedLocation}</span>
               </p>
             )}
           </Field>
