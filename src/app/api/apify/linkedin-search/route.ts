@@ -16,8 +16,13 @@ export const dynamic = 'force-dynamic'
 // límite por defecto de la función.
 export const maxDuration = 300
 
-/** Tope duro por búsqueda, con el actor a $0.01 por perfil con correo. */
-const MAX_PROFILES_PER_SEARCH = 200
+/**
+ * Tope duro por búsqueda. Debe coincidir con el de la interfaz.
+ *
+ * Se comprueba también aquí porque el cliente no es la última defensa del
+ * saldo: una petición manipulada podría pedir miles de perfiles.
+ */
+const MAX_PROFILES_PER_SEARCH = 50
 
 interface Body {
   query?: string

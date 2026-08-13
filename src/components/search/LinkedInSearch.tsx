@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Search, Loader2, AlertCircle, Plus, Check, Briefcase, MapPin,
-  Building2, UserSearch, Mail, Users, Trash2, Info,
+  Building2, UserSearch, Mail, Users, Trash2, Info, History,
 } from 'lucide-react'
 
 /**
@@ -113,6 +113,22 @@ function composeLocation(city: string, country: string): string {
   return `${trimmed}, ${country}`
 }
 
+/**
+ * Tope de perfiles por búsqueda.
+ *
+ * Aquí cada perfil cuesta más que en Google Places y además se paga la página,
+ * así que el campo se deja escribir pero acotado: un cero de más gastaría el
+ * saldo del mes de una sola vez.
+ */
+const MAX_PROFILES = 50
+
+/** Acota lo tecleado al rango permitido; un valor no numérico cae al mínimo. */
+function clampProfiles(value: string): number {
+  const n = Math.trunc(Number(value))
+  if (!Number.isFinite(n) || n < 1) return 1
+  return Math.min(n, MAX_PROFILES)
+}
+
 /** Convierte "Director, Gerente" en ['Director', 'Gerente']. */
 function splitList(value: string): string[] {
   return value
@@ -140,6 +156,9 @@ export function LinkedInSearch() {
     () => new Set(loadPersisted()?.imported ?? []),
   )
   const [summary, setSummary] = useState<string | null>(() => loadPersisted()?.summary ?? null)
+  // Rescate de una búsqueda ya pagada cuyos resultados se perdieron.
+  const [recovering, setRecovering] = useState(false)
+  const [recovered, setRecovered] = useState<string | null>(null)
 
   // Persistir evita perder una búsqueda ya pagada al cambiar de pestaña.
   useEffect(() => {
@@ -249,6 +268,34 @@ export function LinkedInSearch() {
     setSummary(parts.join(' · '))
   }
 
+  /**
+   * Guarda los perfiles de la última búsqueda ejecutada en Apify.
+   *
+   * Sirve cuando la vista se perdió pero el gasto ya se hizo: los resultados
+   * siguen en el dataset de Apify durante días.
+   */
+  async function recoverLast() {
+    setRecovering(true)
+    setRecovered(null)
+    setError(null)
+    try {
+      const res = await fetch('/api/apify/linkedin-recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderName: 'LinkedIn' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'No se pudo recuperar')
+      const partes = [`${data.created} guardados en «${data.folder.name}»`]
+      if (data.duplicates) partes.push(`${data.duplicates} ya estaban`)
+      setRecovered(partes.join(' · '))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo recuperar')
+    } finally {
+      setRecovering(false)
+    }
+  }
+
   function clearResults() {
     setResults([])
     setMeta(null)
@@ -332,18 +379,19 @@ export function LinkedInSearch() {
 
         {/* Tope y coste: el actor cobra por página aunque vuelva vacía. */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Máximo de perfiles" hint="Acota lo que se gasta">
-            <select
-              value={maxProfiles}
-              onChange={(e) => setMaxProfiles(Number(e.target.value))}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-            >
-              {[10, 25, 50, 100, 200].map((n) => (
-                <option key={n} value={n}>
-                  {n} perfiles
-                </option>
-              ))}
-            </select>
+          <Field label="Máximo de perfiles" hint={`1 a ${MAX_PROFILES}`}>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={MAX_PROFILES}
+                value={maxProfiles}
+                onChange={(e) => setMaxProfiles(clampProfiles(e.target.value))}
+                onBlur={(e) => setMaxProfiles(clampProfiles(e.target.value))}
+                className="w-24 rounded-lg border border-gray-200 px-3 py-2.5 text-sm tabular-nums outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              />
+              <span className="text-xs text-gray-400 whitespace-nowrap">de {MAX_PROFILES}</span>
+            </div>
           </Field>
 
           <div className="flex flex-col justify-end">
@@ -397,6 +445,39 @@ export function LinkedInSearch() {
           </p>
         )}
       </form>
+
+      {/* Rescate de una búsqueda ya pagada. Se ofrece solo cuando no hay nada
+          en pantalla, que es justo cuando se ha perdido la vista. */}
+      {results.length === 0 && !loading && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/60">
+          <History className="h-4 w-4 shrink-0 text-gray-400" />
+          <p className="flex-1 text-xs text-gray-600 dark:text-gray-400">
+            ¿Hiciste una búsqueda y perdiste los resultados? Se pueden rescatar
+            sin volver a pagarla.
+          </p>
+          <button
+            type="button"
+            onClick={recoverLast}
+            disabled={recovering}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          >
+            {recovering ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Rescatando…
+              </>
+            ) : (
+              'Guardar la última búsqueda'
+            )}
+          </button>
+        </div>
+      )}
+
+      {recovered && (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+          <Check className="h-4 w-4 shrink-0" />
+          {recovered}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">

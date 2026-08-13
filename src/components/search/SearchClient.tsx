@@ -57,6 +57,21 @@ interface PlaceResult {
   pinterests?: string[]
 }
 
+/**
+ * Tope de resultados por búsqueda.
+ *
+ * Cada resultado consume créditos de Apify, así que el campo se deja escribir
+ * pero se acota: un cero de más al teclear gastaría el saldo del mes.
+ */
+const MAX_RESULTS = 50
+
+/** Acota lo tecleado al rango permitido; un valor no numérico cae al mínimo. */
+function clampResults(value: string): number {
+  const n = Math.trunc(Number(value))
+  if (!Number.isFinite(n) || n < 1) return 1
+  return Math.min(n, MAX_RESULTS)
+}
+
 const QUICK_CATEGORIES = [
   'Restaurantes', 'Gimnasios', 'Dentistas', 'Abogados', 'Hoteles',
   'Farmacias', 'Supermercados', 'Salones de belleza', 'Agencias de marketing',
@@ -466,16 +481,18 @@ export function SearchClient() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">Máx. resultados</label>
-            <select
+            {/* Escribible pero acotado: teclear "500" por descuido gastaría
+                el saldo del mes de una sola vez. */}
+            <input
+              type="number"
+              min={1}
+              max={MAX_RESULTS}
               value={maxResults}
-              onChange={(e) => setMaxResults(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={30}>30</option>
-              <option value={50}>50</option>
-            </select>
+              onChange={(e) => setMaxResults(clampResults(e.target.value))}
+              onBlur={(e) => setMaxResults(clampResults(e.target.value))}
+              className="w-20 px-3 py-2 border border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-400 whitespace-nowrap">de {MAX_RESULTS}</span>
           </div>
           <button
             type="submit"
