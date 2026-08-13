@@ -96,12 +96,17 @@ export interface LinkedInProfile {
       countryFull?: string | null
     } | null
   } | null
-  currentPosition?: { companyName?: string | null }[]
+  /** Puesto vigente. Trae `companyName` y, en muchos perfiles, `position`. */
+  currentPosition?: { companyName?: string | null; position?: string | null }[]
   experience?: Experience[]
   topSkills?: string
-  /** Solo llega en el modo con búsqueda de correo, y no siempre. */
+  /**
+   * Solo llegan en el modo con búsqueda de correo, y no siempre: lo habitual es
+   * que `emails` sea `null`. Cuando trae algo puede ser una lista de cadenas o
+   * de objetos con la dirección y su verificación, de ahí el tipo abierto.
+   */
   email?: string | null
-  emails?: string[] | null
+  emails?: unknown[] | null
 }
 
 /** Forma en que el CRM presenta un perfil, ya normalizado. */
@@ -121,49 +126,104 @@ export interface LinkedInResult {
   openToWork: boolean
 }
 
-/** El actor unas veces trae `email` y otras una lista `emails`. */
+/**
+ * Texto limpio a partir de un valor de origen desconocido.
+ *
+ * El actor rellena unos campos y deja otros a `null`, y un mismo campo puede
+ * llegar como cadena o como objeto según el perfil. Comprobar el tipo aquí
+ * evita que un perfil raro tumbe la búsqueda entera.
+ */
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+/**
+ * Correo del perfil, venga como venga.
+ *
+ * Solo aparece en el modo con búsqueda de correo, y aun así no siempre: el
+ * campo puede faltar, ser `null`, una cadena, una lista de cadenas o una lista
+ * de objetos con la dirección y su verificación.
+ */
 function pickEmail(profile: LinkedInProfile): string {
-  if (profile.email?.trim()) return profile.email.trim()
-  const first = profile.emails?.find((e) => e?.trim())
-  return first?.trim() ?? ''
+  const direct = text(profile.email)
+  if (direct) return direct
+
+  const list = profile.emails
+  if (!Array.isArray(list)) return ''
+
+  for (const entry of list) {
+    const value = text(entry)
+    if (value) return value
+    // Forma con metadatos: { email: '…', status: 'valid' }.
+    if (entry && typeof entry === 'object') {
+      const nested = text((entry as Record<string, unknown>).email)
+      if (nested) return nested
+    }
+  }
+  return ''
+}
+
+/** La experiencia que sigue vigente, que es la que describe al lead hoy. */
+function currentExperience(profile: LinkedInProfile) {
+  if (!Array.isArray(profile.experience)) return undefined
+  return profile.experience.find((e) => text(e?.endDate?.text) === 'Present')
 }
 
 /** Empresa actual: primero el campo dedicado, si no la experiencia en curso. */
 function pickCompany(profile: LinkedInProfile): string {
-  const current = profile.currentPosition?.[0]?.companyName
-  if (current?.trim()) return current.trim()
-  const ongoing = profile.experience?.find((e) => e.endDate?.text === 'Present')
-  return ongoing?.companyName?.trim() ?? ''
+  const positions = profile.currentPosition
+  if (Array.isArray(positions)) {
+    for (const p of positions) {
+      const name = text(p?.companyName)
+      if (name) return name
+    }
+  }
+  return text(currentExperience(profile)?.companyName)
 }
 
 /** Cargo actual, para distinguirlo del titular (que suele ser publicitario). */
 function pickPosition(profile: LinkedInProfile): string {
-  const ongoing = profile.experience?.find((e) => e.endDate?.text === 'Present')
-  return ongoing?.position?.trim() ?? ''
+  // `currentPosition` también trae el puesto en algunos perfiles.
+  const positions = profile.currentPosition
+  if (Array.isArray(positions)) {
+    for (const p of positions) {
+      const role = text((p as Record<string, unknown>)?.position)
+      if (role) return role
+    }
+  }
+  return text(currentExperience(profile)?.position)
 }
 
-/** Convierte un perfil crudo en la forma que consume la interfaz. */
+/**
+ * Convierte un perfil crudo en la forma que consume la interfaz.
+ *
+ * Todo campo se lee con `text()`: el actor devuelve `null` en lo que no
+ * encuentra, y un solo perfil incompleto no debe tumbar la búsqueda entera
+ * (que ya está pagada).
+ */
 export function toResult(profile: LinkedInProfile): LinkedInResult {
-  const name = [profile.firstName, profile.lastName]
-    .map((p) => p?.trim())
+  const name = [text(profile.firstName), text(profile.lastName)]
     .filter(Boolean)
     .join(' ')
 
   const parsed = profile.location?.parsed
+  const identifier = text(profile.publicIdentifier)
+  const url = text(profile.linkedinUrl)
+
   return {
-    profileId: profile.id ?? profile.publicIdentifier ?? profile.linkedinUrl ?? '',
-    name: name || (profile.publicIdentifier ?? 'Sin nombre'),
-    headline: profile.headline?.trim() ?? '',
+    profileId: text(profile.id) || identifier || url,
+    name: name || identifier || 'Sin nombre',
+    headline: text(profile.headline),
     company: pickCompany(profile),
     position: pickPosition(profile),
     email: pickEmail(profile),
-    city: parsed?.city?.trim() || profile.location?.linkedinText?.trim() || '',
-    country: parsed?.countryFull?.trim() || parsed?.country?.trim() || '',
-    linkedinUrl: profile.linkedinUrl ?? '',
-    photo: profile.photo ?? '',
-    about: profile.about?.trim() ?? '',
-    connections: profile.connectionsCount ?? null,
-    openToWork: Boolean(profile.openToWork),
+    city: text(parsed?.city) || text(profile.location?.linkedinText),
+    country: text(parsed?.countryFull) || text(parsed?.country),
+    linkedinUrl: url,
+    photo: text(profile.photo),
+    about: text(profile.about),
+    connections: typeof profile.connectionsCount === 'number' ? profile.connectionsCount : null,
+    openToWork: profile.openToWork === true,
   }
 }
 
