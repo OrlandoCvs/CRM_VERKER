@@ -138,7 +138,8 @@ export function LinkedInSearch() {
         body: JSON.stringify({
           query: query.trim(),
           jobTitles: splitList(jobTitles),
-          locations: splitList(locations),
+          // Sin trocear: una coma aquí sería parte del nombre, no un separador.
+          locations: locations.trim() ? [locations.trim()] : [],
           companies: splitList(companies),
           maxProfiles,
           withEmail,
@@ -146,6 +147,17 @@ export function LinkedInSearch() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al buscar')
+
+      // Una búsqueda válida que no encuentra a nadie suele significar filtros
+      // demasiado estrechos o una ubicación que LinkedIn no reconoce; conviene
+      // decirlo en vez de dejar la pantalla en blanco.
+      if ((data.results?.length ?? 0) === 0) {
+        setError(
+          'LinkedIn no devolvió ningún perfil. Suele pasar por dos motivos: ' +
+          'la ubicación no se reconoce (escribe solo la ciudad, sin estado ni país), ' +
+          'o los filtros son tan estrechos que nadie los cumple. Prueba con menos filtros.',
+        )
+      }
 
       setResults(data.results ?? [])
       setMeta({
@@ -232,13 +244,20 @@ export function LinkedInSearch() {
             />
           </Field>
 
-          <Field label="Ubicación" hint="Escribe el nombre completo del país o ciudad">
+          <Field label="Ubicación" hint="Solo la ciudad, sin estado ni país">
             <IconInput
               icon={MapPin}
               value={locations}
               onChange={setLocations}
-              placeholder="Monterrey, Guadalajara"
+              placeholder="Torreón"
             />
+            {locations.includes(',') && (
+              <p className="flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                Escribe una sola ubicación. LinkedIn cancela la búsqueda entera
+                si no reconoce alguna: «Torreón», no «Torreón, Coahuila, MX».
+              </p>
+            )}
           </Field>
         </div>
 
