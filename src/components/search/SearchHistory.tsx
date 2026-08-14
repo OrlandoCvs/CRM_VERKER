@@ -5,6 +5,13 @@ import {
   History, Loader2, Trash2, ChevronDown, Mail, Check,
   Users, Building2, MapPin, X,
 } from 'lucide-react'
+import {
+  FolderDestination,
+  EMPTY_DESTINATION,
+  destinationReady,
+  resolveDestination,
+  type DestinationState,
+} from '@/components/leads/FolderDestination'
 
 /**
  * Historial de búsquedas ya pagadas.
@@ -67,6 +74,11 @@ export function SearchHistory({ source, onImported }: Props) {
   const [importing, setImporting] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
 
+  // Destino: se pregunta al pulsar guardar, no antes, para no estorbar
+  // mientras solo se está revisando la búsqueda.
+  const [asking, setAsking] = useState(false)
+  const [destination, setDestination] = useState<DestinationState>(EMPTY_DESTINATION)
+
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/search-history?source=${source}`)
@@ -100,6 +112,8 @@ export function SearchHistory({ source, onImported }: Props) {
     setResults([])
     setSelected(new Set())
     setSummary(null)
+    setAsking(false)
+    setDestination(EMPTY_DESTINATION)
     setLoadingResults(true)
     try {
       const res = await fetch(`/api/search-history/${id}`)
@@ -125,12 +139,15 @@ export function SearchHistory({ source, onImported }: Props) {
     setImporting(true)
     setSummary(null)
     try {
+      // Puede crear una carpeta nueva; si falla, no se importa nada.
+      const targetFolderId = await resolveDestination(destination)
+
       const res = await fetch(`/api/search-history/${runId}/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           resultIds: [...selected],
-          folderName: source === 'linkedin' ? 'LinkedIn' : 'Google Maps',
+          folderId: targetFolderId,
         }),
       })
       const data = await res.json()
@@ -140,6 +157,8 @@ export function SearchHistory({ source, onImported }: Props) {
       if (data.duplicates) partes.push(`${data.duplicates} ya existían`)
       if (data.errors) partes.push(`${data.errors} con error`)
       setSummary(partes.join(' · '))
+      setAsking(false)
+      setDestination(EMPTY_DESTINATION)
 
       await openRunRefresh(runId)
       await load()
@@ -263,19 +282,50 @@ export function SearchHistory({ source, onImported }: Props) {
                         )}
                         <button
                           type="button"
-                          onClick={() => importSelected(run.id)}
-                          disabled={importing || selected.size === 0}
+                          onClick={() => setAsking(true)}
+                          disabled={importing || selected.size === 0 || asking}
                           className="ml-auto flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                         >
-                          {importing ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Guardando…
-                            </>
-                          ) : (
-                            `Guardar ${selected.size} como leads`
-                          )}
+                          {`Guardar ${selected.size} como leads`}
                         </button>
                       </div>
+
+                      {/* Se pregunta el destino antes de guardar: así los leads
+                          no caen sueltos por descuido. */}
+                      {asking && (
+                        <div className="mb-2 space-y-2">
+                          <FolderDestination
+                            value={destination}
+                            onChange={setDestination}
+                            name={`destino-${run.id}`}
+                            compact
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => importSelected(run.id)}
+                              disabled={importing || !destinationReady(destination)}
+                              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {importing ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Guardando…
+                                </>
+                              ) : (
+                                `Guardar ${selected.size} aquí`
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAsking(false)}
+                              disabled={importing}
+                              className="text-xs text-gray-500 hover:underline disabled:opacity-50"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="max-h-72 space-y-1 overflow-y-auto">
                         {results.map((r) => {

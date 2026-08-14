@@ -1,10 +1,15 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { X, Upload, FileText, Loader2, CheckCircle2, AlertCircle, ArrowRight, Download } from 'lucide-react'
 import { parseCsv } from '@/lib/csv'
 import { IMPORTABLE_FIELDS, guessMapping, type ImportableFieldKey } from '@/lib/csv-mapping'
-import { buildFolderTree } from '@/lib/folders'
+import {
+  FolderDestination,
+  destinationReady,
+  resolveDestination,
+  type DestinationState,
+} from '@/components/leads/FolderDestination'
 import type { Folder } from '@/types'
 
 interface Props {
@@ -32,9 +37,6 @@ interface ImportTotals {
   errors: RowError[]
 }
 
-/** Cómo decide el usuario dónde caen los leads. Obligatorio elegir uno. */
-type Destination = 'new' | 'existing' | 'none' | null
-
 /** Filas por lote enviadas al backend. Menos que el MAX del servidor, por margen. */
 const BATCH_SIZE = 100
 
@@ -52,27 +54,13 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // --- Destino de los leads (obligatorio) ---
-  const [destination, setDestination] = useState<Destination>(
-    // Si venías dentro de una carpeta concreta, pre-selecciona "usar existente".
-    folderId !== 'all' && folderId !== 'none' ? 'existing' : null,
-  )
-  const [newFolderName, setNewFolderName] = useState('')
-  const [existingFolderId, setExistingFolderId] = useState(
-    folderId !== 'all' && folderId !== 'none' ? folderId : '',
-  )
-
-  // Carpetas ordenadas jerárquicamente para el <select> (con sangría por nivel).
-  const folderOptions = useMemo(() => {
-    const out: { id: string; label: string }[] = []
-    const walk = (nodes: ReturnType<typeof buildFolderTree>) => {
-      for (const n of nodes) {
-        out.push({ id: n.id, label: `${'  '.repeat(n.depth)}${n.name}` })
-        if (n.children.length) walk(n.children)
-      }
-    }
-    walk(buildFolderTree(folders))
-    return out
-  }, [folders])
+  // Si venías dentro de una carpeta concreta, se pre-selecciona "usar existente".
+  const insideFolder = folderId !== 'all' && folderId !== 'none'
+  const [destination, setDestination] = useState<DestinationState>({
+    destination: insideFolder ? 'existing' : null,
+    newFolderName: '',
+    existingFolderId: insideFolder ? folderId : '',
+  })
 
   function handleFile(file: File) {
     setError(null)
@@ -118,38 +106,12 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
     })
   }
 
-  /** Resuelve el destino elegido a un folderId concreto (creando la carpeta si toca). */
-  async function resolveTargetFolder(): Promise<string | null> {
-    if (destination === 'none') return null
-    if (destination === 'existing') return existingFolderId || null
-    if (destination === 'new') {
-      const res = await fetch('/api/folders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newFolderName.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'No se pudo crear la carpeta')
-      onFolderCreated?.(data as Folder)
-      return (data as Folder).id
-    }
-    return null
-  }
-
-  /** Valida el destino antes de dejar importar. */
-  function destinationReady(): boolean {
-    if (destination === 'new') return newFolderName.trim().length > 0
-    if (destination === 'existing') return existingFolderId !== ''
-    if (destination === 'none') return true
-    return false
-  }
-
   async function handleImport() {
     if (mapping.name === undefined) {
       setError('Asigna la columna de Nombre antes de importar.')
       return
     }
-    if (!destinationReady()) {
+    if (!destinationReady(destination)) {
       setError('Elige dónde guardar los leads antes de importar.')
       return
     }
@@ -161,7 +123,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
     const acc: ImportTotals = { created: 0, duplicates: 0, errors: [] }
 
     try {
-      const targetFolderId = await resolveTargetFolder()
+      const targetFolderId = await resolveDestination(destination, onFolderCreated)
 
       // Envía el archivo en lotes para no exceder el tiempo de la función serverless
       // y poder mostrar progreso real.
@@ -321,64 +283,11 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                 ))}
               </div>
 
-              {/* Destino de los leads (obligatorio) */}
-              <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-2.5">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Destino de los leads <span className="text-red-500">*</span>
-                </p>
-
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <input
-                    type="radio"
-                    name="destination"
-                    checked={destination === 'new'}
-                    onChange={() => setDestination('new')}
-                  />
-                  Crear carpeta nueva
-                  <input
-                    type="text"
-                    placeholder="Nombre de la carpeta"
-                    value={newFolderName}
-                    onFocus={() => setDestination('new')}
-                    onChange={(e) => setNewFolderName(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <input
-                    type="radio"
-                    name="destination"
-                    checked={destination === 'existing'}
-                    onChange={() => setDestination('existing')}
-                  />
-                  Usar carpeta existente
-                  <select
-                    value={existingFolderId}
-                    onFocus={() => setDestination('existing')}
-                    onChange={(e) => {
-                      setExistingFolderId(e.target.value)
-                      setDestination('existing')
-                    }}
-                    className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">— Elegir carpeta —</option>
-                    {folderOptions.map((f) => (
-                      <option key={f.id} value={f.id}>{f.label}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <input
-                    type="radio"
-                    name="destination"
-                    checked={destination === 'none'}
-                    onChange={() => setDestination('none')}
-                  />
-                  Sin carpeta (quedan sueltos)
-                </label>
-              </div>
+              <FolderDestination
+                value={destination}
+                onChange={setDestination}
+                folders={folders}
+              />
 
               {/* Vista previa de las primeras filas mapeadas */}
               {mapping.name !== undefined && (
@@ -482,7 +391,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
               </button>
               <button
                 onClick={handleImport}
-                disabled={mapping.name === undefined || !destinationReady()}
+                disabled={mapping.name === undefined || !destinationReady(destination)}
                 className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" /> Importar {rows.length} contactos
