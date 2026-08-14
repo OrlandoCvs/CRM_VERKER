@@ -505,7 +505,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             <button
               onClick={() => setShowImportCsv(true)}
               className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-              title="Importar contactos desde un archivo CSV"
+              title="Importar contactos desde un archivo Excel"
             >
               <Upload className="h-4 w-4" />
               Importar
@@ -513,7 +513,7 @@ export function LeadsClient({ initialLeads, initialFolders }: Props) {
             <a
               href={`/api/leads/export?folder=${encodeURIComponent(selectedFolder)}&sub=${includeSub ? 1 : 0}`}
               className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-              title="Exportar los leads visibles a CSV"
+              title="Exportar los leads visibles a Excel"
             >
               <Download className="h-4 w-4" />
               Exportar

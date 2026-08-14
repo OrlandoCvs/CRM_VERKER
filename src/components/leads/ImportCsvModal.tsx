@@ -70,11 +70,11 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
         const text = String(reader.result ?? '')
         const parsed = parseCsv(text)
         if (parsed.headers.length === 0) {
-          setError('El archivo está vacío o no es un CSV válido.')
+          setError('El archivo está vacío o no es un Excel válido.')
           return
         }
         if (parsed.rows.length === 0) {
-          setError('El CSV tiene cabeceras pero ninguna fila de datos.')
+          setError('El Excel tiene cabeceras pero ninguna fila de datos.')
           return
         }
         setFileName(file.name)
@@ -83,7 +83,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
         setMapping(guessMapping(parsed.headers))
         setStep('map')
       } catch {
-        setError('No se pudo leer el archivo. ¿Es un CSV?')
+        setError('No se pudo leer el archivo. ¿Es un Excel?')
       }
     }
     reader.onerror = () => setError('Error al leer el archivo.')
@@ -186,7 +186,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <div className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Importar contactos desde CSV</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Importar contactos desde Excel</h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <X className="w-5 h-5" />
@@ -216,7 +216,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
               >
                 <FileText className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Arrastra tu archivo CSV aquí o haz clic para elegirlo
+                  Arrastra tu archivo Excel aquí o haz clic para elegirlo
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   El sistema detectará las columnas automáticamente
@@ -237,7 +237,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                 className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 mx-auto"
               >
                 <Download className="w-3.5 h-3.5" />
-                Descargar plantilla CSV de ejemplo
+                Descargar plantilla Excel de ejemplo
               </button>
             </div>
           )}
@@ -371,7 +371,7 @@ export function ImportCsvModal({ folderId, folders, onClose, onImported, onFolde
                     className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Descargar filas con error (CSV)
+                    Descargar filas con error (Excel)
                   </button>
                 </div>
               )}
